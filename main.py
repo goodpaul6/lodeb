@@ -59,6 +59,8 @@ def win_target_metadata(st: state.State):
 
     changed, st.sym_search_text = imgui.input_text('Search Symbol', st.sym_search_text)
 
+    imgui.begin_child('Files')
+
     for path, f in md.path_to_files.items():
         relevant_syms = [sym for sym in f.symbols if not st.sym_search_text or st.sym_search_text in sym.name]
 
@@ -69,10 +71,11 @@ def win_target_metadata(st: state.State):
             for sym in relevant_syms:
                 clicked, _ = imgui.selectable(sym.name, False)
                 if clicked:
-                    st.sym_to_open = state.LocatedSym(fi=f, path=path, sym=sym)
+                    st.loc_to_open = state.sym_loc(sym)
 
             imgui.tree_pop()
 
+    imgui.end_child()
 
     imgui.end()
 
@@ -105,7 +108,26 @@ def win_source_file(st: state.State):
 
     imgui.end()
 
+def update(st: state.State, executor: ThreadPoolExecutor):
+    if st.should_load:
+        st.target = debugger.create_target(st.dbg, st.exe_params)
+        st.target_metadata = executor.submit(debugger.get_target_metadata_wait, st.target)
 
+    if st.loc_to_open:
+        path = st.loc_to_open.path
+        line = st.loc_to_open.line
+
+        if st.source_file and path == st.source_file.path:
+            st.source_file.scroll_to_line = line
+        else:
+            with open(path) as f:
+                st.source_file = state.SourceFile(
+                    path=path,
+                    text=f.read(),
+                    scroll_to_line=line
+                )
+
+        st.loc_to_open = None
 
 def main():
     dbg = lldb.SBDebugger.Create()
@@ -140,31 +162,11 @@ def main():
         # start new frame context
         imgui.new_frame()
 
-        st.should_load = win_load_executable(st)         
-
-        if st.should_load:
-            st.target = debugger.create_target(st.dbg, st.exe_params)
-            st.target_metadata = executor.submit(debugger.get_target_metadata_wait, st.target)
-
+        st.should_load = win_load_executable(st)
         win_target_metadata(st)
-
-        if st.sym_to_open:
-            sym_path = st.sym_to_open.path
-            sym_line = st.sym_to_open.sym.addr.line_entry.line
-
-            if st.source_file and sym_path == st.source_file.path:
-                st.source_file.scroll_to_line = sym_line
-            else:
-                with open(sym_path) as f:
-                    st.source_file = state.SourceFile(
-                        path=sym_path,
-                        text=f.read(),
-                        scroll_to_line=sym_line
-                    )
-
-            st.sym_to_open = None
-
         win_source_file(st)
+
+        update(st, executor)
 
         gl.glClearColor(0, 0, 0, 0)
         gl.glClear(gl.GL_COLOR_BUFFER_BIT)
