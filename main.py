@@ -55,7 +55,9 @@ def launch_and_stop(lp: LaunchParams, dbg: lldb.SBDebugger) -> Optional[lldb.SBP
     if not target:
         return None
 
-    main_bp = target.BreakpointCreateByName('main', target.GetExecutable().GetFilename())
+    bp = target.BreakpointCreateByLocation('test_parser.odin', 159)
+    print(bp)
+
     process = target.LaunchSimple(None, None, lp.working_dir)
 
     return process
@@ -65,8 +67,13 @@ def get_process_metadata(process: lldb.SBProcess) -> ProcessMetadata:
     files = set()
 
     for mod in process.target.modules:
-        for cu in mod.compile_units:
-            files.add(cu.file.fullpath)
+        for sym in mod:
+            if sym.GetStartAddress().GetFileAddress() == 0:
+                continue
+
+            path = sym.GetStartAddress().GetLineEntry().GetFileSpec().fullpath
+
+            if path: files.add(path)
 
     return ProcessMetadata(source_files=files)
 
