@@ -1,87 +1,115 @@
 from typing import Optional
+from concurrent.futures import ThreadPoolExecutor
 
 import sys
+import os.path
 
 sys.path.insert(0, '/Applications/Xcode.app/Contents/SharedFrameworks/LLDB.framework/Resources/Python')
 
 import lldb
+
 import pygame
 import imgui
 import filedialpy
 import OpenGL.GL as gl
-import os.path
-from dataclasses import dataclass 
 from imgui.integrations.pygame import PygameRenderer
 
-@dataclass
-class LaunchParams:
-    exe_path: str = ""
-    working_dir: str = ""
-    should_launch: bool = False
+import state
+import debugger
 
+def win_load_executable(st: state.State) -> bool:
+    imgui.begin('Load Executable', True)
 
-@dataclass
-class ProcessMetadata:
-    source_files: set[str]
-
-
-def win_launch_executable(params: LaunchParams):
-    imgui.begin('Launch Executable', True)
-
-    exe_changed, params.exe_path = imgui.input_text('Executable Path', params.exe_path)
+    exe_changed, st.exe_params.path = imgui.input_text('Executable Path', st.exe_params.exe_path)
 
     imgui.same_line()
     if imgui.button('Browse'):
-        params.exe_path = filedialpy.openFile()
+        st.exe_params.exe_path = filedialpy.openFile()
         exe_changed = True
 
-    wd_changed, params.working_dir = imgui.input_text('Working Directory', params.working_dir)
+    wd_changed, st.exe_params.working_dir = imgui.input_text('Working Directory', st.exe_params.working_dir)
 
     imgui.same_line()
     if imgui.button('Browse'):
-        params.working_dir = filedialpy.openDir()
+        st.exe_params.working_dir = filedialpy.openDir()
 
-    if exe_changed and params.working_dir == "":
-        params.working_dir = os.path.dirname(params.exe_path)
+    if exe_changed and st.exe_params.working_dir == "":
+        st.exe_params.working_dir = os.path.dirname(st.exe_params.exe_path)
 
-    params.should_launch = imgui.button('Launch')
+    should_load = imgui.button('Load')
+
+    imgui.end()
+
+    return should_load
+
+
+def win_target_metadata(st: state.State):
+    if not st.target_metadata:
+        return
+
+    imgui.begin('Target Metadata')
+
+    if not st.target_metadata.done():
+        imgui.text('Loading symbols...')
+        imgui.end()
+
+        return
+
+    md = st.target_metadata.result()
+
+    changed, st.sym_search_text = imgui.input_text('Search Symbol', st.sym_search_text)
+
+    for path, f in md.path_to_files.items():
+        relevant_syms = [sym for sym in f.symbols if not st.sym_search_text or st.sym_search_text in sym.name]
+
+        if not relevant_syms:
+            continue
+
+        if imgui.tree_node(path):
+            for sym in relevant_syms:
+                clicked, _ = imgui.selectable(sym.name, False)
+                if clicked:
+                    st.sym_to_open = state.LocatedSym(fi=f, path=path, sym=sym)
+
+            imgui.tree_pop()
+
 
     imgui.end()
 
 
-def launch_and_stop(lp: LaunchParams, dbg: lldb.SBDebugger) -> Optional[lldb.SBProcess]:
-    target = dbg.CreateTargetWithFileAndArch(lp.exe_path, lldb.LLDB_ARCH_DEFAULT)
+def win_source_file(st: state.State):
+    if not st.source_file:
+        return
 
-    if not target:
-        return None
+    imgui.begin('Source File')
 
-    bp = target.BreakpointCreateByLocation('test_parser.odin', 159)
-    print(bp)
+    imgui.text(f'Path: {st.source_file.path}')
 
-    process = target.LaunchSimple(None, None, lp.working_dir)
+    imgui.begin_child('Source Code', width=-1, height=-1, border=True)
 
-    return process
+    lines = st.source_file.text.split('\n')
 
+    for idx, line in enumerate(lines):
+        # Line number
+        imgui.text_unformatted(f'{idx + 1}')
 
-def get_process_metadata(process: lldb.SBProcess) -> ProcessMetadata:
-    files = set()
+        imgui.same_line(60)
 
-    for mod in process.target.modules:
-        for sym in mod:
-            if sym.GetStartAddress().GetFileAddress() == 0:
-                continue
+        imgui.text_unformatted(line)
 
-            path = sym.GetStartAddress().GetLineEntry().GetFileSpec().fullpath
+        if st.source_file.scroll_to_line == idx + 1:
+            imgui.set_scroll_here_y()
+            st.source_file.scroll_to_line = None
 
-            if path: files.add(path)
+    imgui.end_child()
 
-    return ProcessMetadata(source_files=files)
+    imgui.end()
+
 
 
 def main():
     dbg = lldb.SBDebugger.Create()
 
-    # No docs on how to do async mode so...
     dbg.SetAsync(False)
 
     pygame.init()
@@ -97,9 +125,8 @@ def main():
     io = imgui.get_io()
     io.display_size = size
 
-    launch_params = LaunchParams()
-    process: Optional[lldb.SBProcess] = None
-    process_metadata: Optional[ProcessMetadata] = None
+    st = state.create()
+    executor = ThreadPoolExecutor(max_workers=3)
     
     while True:
         for event in pygame.event.get():
@@ -113,15 +140,31 @@ def main():
         # start new frame context
         imgui.new_frame()
 
-        win_launch_executable(launch_params)
+        st.should_load = win_load_executable(st)         
 
-        if launch_params.should_launch:
-            process = launch_and_stop(launch_params, dbg)
+        if st.should_load:
+            st.target = debugger.create_target(st.dbg, st.exe_params)
+            st.target_metadata = executor.submit(debugger.get_target_metadata_wait, st.target)
 
-        if process and not process_metadata:
-            process_metadata = get_process_metadata(process)
-            print(process_metadata)
+        win_target_metadata(st)
 
+        if st.sym_to_open:
+            sym_path = st.sym_to_open.path
+            sym_line = st.sym_to_open.sym.addr.line_entry.line
+
+            if st.source_file and sym_path == st.source_file.path:
+                st.source_file.scroll_to_line = sym_line
+            else:
+                with open(sym_path) as f:
+                    st.source_file = state.SourceFile(
+                        path=sym_path,
+                        text=f.read(),
+                        scroll_to_line=sym_line
+                    )
+
+            st.sym_to_open = None
+
+        win_source_file(st)
 
         gl.glClearColor(0, 0, 0, 0)
         gl.glClear(gl.GL_COLOR_BUFFER_BIT)
