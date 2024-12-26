@@ -45,3 +45,6 @@ def get_target_metadata_wait(target: lldb.SBTarget) -> TargetMetadata:
                 md.path_to_files[path].symbols.append(sym)
 
     return md
+
+def create_breakpoint_by_file_line(target: lldb.SBTarget, fname: str, line: int) -> lldb.SBBreakpoint:
+    return target.BreakpointCreateByLocation(fname, line)

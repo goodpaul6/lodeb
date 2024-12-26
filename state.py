@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 import lldb
 import debugger
 
-@dataclass
+@dataclass(frozen=True)
 class Loc:
     path: str
     line: int
@@ -37,6 +37,11 @@ class State:
     loc_to_open: Optional[Loc] = None
 
     source_file: Optional[SourceFile] = None
+
+    # When set, we attempt to add a breakpoint at this location
+    loc_to_toggle_breakpoint: Optional[Loc] = None
+
+    loc_to_breakpoint: dict[Loc, lldb.SBBreakpoint] = field(default_factory=dict)
 
 def create() -> State:
     return State(

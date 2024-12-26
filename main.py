@@ -93,16 +93,38 @@ def win_source_file(st: state.State):
     lines = st.source_file.text.split('\n')
 
     for idx, line in enumerate(lines):
-        # Line number
-        imgui.text_unformatted(f'{idx + 1}')
+        imgui.push_id(str(idx))
 
-        imgui.same_line(60)
+        loc = state.Loc(path=st.source_file.path, line=idx + 1)
 
-        imgui.text_unformatted(line)
+        bp = st.loc_to_breakpoint.get(loc)
+
+        if imgui.invisible_button('##gutter', width=16, height=16):
+            # NOTE(Apaar): We avoid mutating things directly and instead signal
+            # update to do the work so it can do cross-cutting things
+            st.loc_to_toggle_breakpoint = loc
+
+        imgui.same_line()
+     
+        if bp:
+            # Draw filled circle if there is a breakpoint here
+            draw_list = imgui.get_window_draw_list()
+            cursor_pos = imgui.get_item_rect_min()
+            draw_list.add_circle_filled(
+                cursor_pos.x + 8, cursor_pos.y + 8,
+                4,
+                imgui.get_color_u32_rgba(1.0, 0.0, 0.0, 1.0)
+            )
+
+        imgui.same_line()
+
+        imgui.text_unformatted(f'{loc.line:5} {line}')
 
         if st.source_file.scroll_to_line == idx + 1:
             imgui.set_scroll_here_y()
             st.source_file.scroll_to_line = None
+
+        imgui.pop_id()
 
     imgui.end_child()
 
@@ -112,6 +134,8 @@ def update(st: state.State, executor: ThreadPoolExecutor):
     if st.should_load:
         st.target = debugger.create_target(st.dbg, st.exe_params)
         st.target_metadata = executor.submit(debugger.get_target_metadata_wait, st.target)
+
+        st.should_load = False
 
     if st.loc_to_open:
         path = st.loc_to_open.path
@@ -128,6 +152,22 @@ def update(st: state.State, executor: ThreadPoolExecutor):
                 )
 
         st.loc_to_open = None
+
+    if st.loc_to_toggle_breakpoint:
+        loc = st.loc_to_toggle_breakpoint
+        
+        if loc in st.loc_to_breakpoint:
+            st.loc_to_breakpoint.pop(loc, None)
+        else:
+            bp = debugger.create_breakpoint_by_file_line(st.target, loc.path, loc.line)
+            
+            if not bp.IsValid():
+                print('Invalid breakpoint')
+            else:
+                st.loc_to_breakpoint[loc] = bp
+
+        st.loc_to_toggle_breakpoint = None
+
 
 def main():
     dbg = lldb.SBDebugger.Create()
