@@ -209,10 +209,13 @@ def update(st: state.State, executor: ThreadPoolExecutor):
 
         st.loc_to_open = None
 
-    if st.loc_to_toggle_breakpoint:
+    if st.target and st.loc_to_toggle_breakpoint:
         loc = st.loc_to_toggle_breakpoint
         
         if loc in st.loc_to_breakpoint:
+            prev_bp = st.loc_to_breakpoint[loc]  
+            st.target.BreakpointDelete(prev_bp.id)
+
             st.loc_to_breakpoint.pop(loc, None)
         else:
             bp = debugger.create_breakpoint_by_file_line(st.target, loc.path, loc.line)
@@ -222,6 +225,8 @@ def update(st: state.State, executor: ThreadPoolExecutor):
             else:
                 st.loc_to_breakpoint[loc] = bp
 
+        st.loc_to_toggle_breakpoint = None
+    else:
         st.loc_to_toggle_breakpoint = None
 
     if not st.process and st.should_start:
@@ -295,8 +300,8 @@ def main():
 
     try:
         state.load(st, 'lodeb.json')
-    except:
-        pass
+    except Exception as e:
+        print(e)
 
     executor = ThreadPoolExecutor(max_workers=3)
     

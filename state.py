@@ -20,7 +20,7 @@ class SourceFile:
 
     # If this is set, then the source view will scroll this
     # line into view. It will then set this to None.
-    scroll_to_line: Optional[int]
+    scroll_to_line: Optional[int] = None
 
 @dataclass
 class ProcessState:
@@ -81,11 +81,21 @@ def sym_loc(sym: lldb.SBSymbol) -> Loc:
 def load(st: State, path: str):
     with open(path) as f:
         data = json.load(f)
-        st.exe_params = debugger.ExeParams(**data['exe_params'])
+
+        st.exe_params = debugger.ExeParams(**data.get('exe_params', {}))
+        source_path = data.get('source_file_path')
+
+        if source_path:
+            with open(source_path) as f:
+                st.source_file = SourceFile(
+                    path=source_path,
+                    text=f.read(),
+                )
 
 
 def store(st: State, path: str):
     with open(path, 'w') as f:
         json.dump({
-            'exe_params': asdict(st.exe_params)
+            'exe_params': asdict(st.exe_params),
+            'source_file_path': st.source_file and st.source_file.path,
         }, f)
