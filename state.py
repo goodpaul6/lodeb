@@ -34,7 +34,11 @@ class ProcessState:
 
     run_to_loc: Optional[Loc] = None
 
+    # Just a cache
+    selected_frame: Optional[lldb.SBFrame] = None
     highlight_loc: Optional[Loc] = None
+
+    frame_var_id_to_str: Optional[Future[list[tuple[str, str]]]] = None
 
 
 @dataclass
@@ -91,6 +95,10 @@ def load(st: State, path: str):
                     path=source_path,
                     text=f.read(),
                 )
+
+        if st.exe_params.exe_path and st.exe_params.working_dir:
+            # Just load the target by default
+            st.should_load = True
 
 
 def store(st: State, path: str):

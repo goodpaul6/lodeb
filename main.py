@@ -1,9 +1,10 @@
 from typing import Optional
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, Future
 
 import sys
 import os.path
 import re
+import functools
 
 sys.path.insert(0, '/Applications/Xcode.app/Contents/SharedFrameworks/LLDB.framework/Resources/Python')
 
@@ -171,6 +172,7 @@ def win_debug(st: state.State):
         st.process.should_continue = imgui.button('Continue')
 
         thread = st.process.process.GetSelectedThread()
+        selected_frame = st.process.selected_frame
         frames = thread and thread.frames
 
         if frames:
@@ -181,17 +183,27 @@ def win_debug(st: state.State):
             for frame in frames:
                 frame_info = strip_ansi_codes(str(frame))
 
-                thread = st.process.process.GetSelectedThread()
-                selected_frame = thread and thread.GetSelectedFrame()
-
-                clicked, _ = imgui.selectable(frame_info, frame == selected_frame)
+                clicked, _ = imgui.selectable(frame_info, selected_frame and frame.GetFrameID() == selected_frame.GetFrameID())
 
                 if clicked:
                     thread.SetSelectedFrame(frame.idx)
 
             imgui.end_child()
 
-            
+        if selected_frame and st.process.frame_var_id_to_str:
+            imgui.text('Locals')
+
+            imgui.begin_child('Locals', width=-1, height=200, border=True)
+
+            if not st.process.frame_var_id_to_str.done():
+                imgui.text('Loading locals (LLDB is slow)...')
+            else:
+                for var_id, s in st.process.frame_var_id_to_str.result():
+                    clicked, _ = imgui.selectable(s, False)
+
+            imgui.end_child() 
+    else:
+        st.process.selected_frame = None
 
     imgui.end()
 
@@ -289,17 +301,32 @@ def update(st: state.State, executor: ThreadPoolExecutor):
             if thread:
                 if st.process.should_step_in:
                     thread.StepInto()
+                    st.process.selected_frame = None
 
                 if st.process.should_step_over:
-                    thread.StepOver()
+                    thread.StepOver() 
+                    st.process.selected_frame = None
 
                 if st.process.should_continue:
                     st.process.process.Continue()
+                    st.process.selected_frame = None
+
+                lldb_selected_frame = thread.GetSelectedFrame()
+
+                # Update it as needed but cache otherwise
+                if not st.process.selected_frame or lldb_selected_frame.GetFrameID() != st.process.selected_frame.GetFrameID():
+                    st.process.selected_frame = lldb_selected_frame
+
+                    # TODO(Apaar): When I run this on another thread, the entire program goes wonky. Is LLDB process/frame API not
+                    # thread safe?
+                    st.process.frame_var_id_to_str = Future()
+                    st.process.frame_var_id_to_str.set_result(debugger.get_frame_var_strs(lldb_selected_frame))
 
         elif pstate in [lldb.eStateExited, lldb.eStateDetached, lldb.eStateUnloaded] or not st.process.process.is_alive:
             st.process = None
         else:
             st.process.highlight_loc = None
+            st.process.selected_frame = None
 
 
 def main():
@@ -337,6 +364,8 @@ def main():
 
             impl.process_event(event)
 
+        update(st, executor)
+
         impl.process_inputs()
 
         # start new frame context
@@ -347,8 +376,6 @@ def main():
         win_source_file(st)
         win_debug(st)
         win_output(st)
-
-        update(st, executor)
 
         gl.glClearColor(0, 0, 0, 0)
         gl.glClear(gl.GL_COLOR_BUFFER_BIT)

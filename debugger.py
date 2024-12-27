@@ -4,6 +4,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from concurrent.futures import Future, ThreadPoolExecutor
 from threading import Thread, Lock
+import itertools
 
 import lldb
 
@@ -63,8 +64,8 @@ def launch_process(target: lldb.SBTarget, params: ExeParams, output: ProcessOutp
 
     def read_into_output(process: lldb.SBProcess, output: ProcessOutput):
         while True:
-            chunk = process.GetSTDOUT(1024)
-            other_chunk = process.GetSTDERR(1024)
+            chunk = process.GetSTDOUT(2048)
+            other_chunk = process.GetSTDERR(2048)
 
             with output.lock:
                 output.buffer += chunk
@@ -76,4 +77,17 @@ def launch_process(target: lldb.SBTarget, params: ExeParams, output: ProcessOutp
     read_thread.start()
 
     return process
+
+def get_frame_var_strs(frame: lldb.SBFrame) -> list[tuple[str, str]]:
+    if not hasattr(frame, 'var_strs'):
+        setattr(frame, 'var_strs', {})
+        setattr(frame, 'cached_locals', frame.locals)
+        setattr(frame, 'cached_args', frame.arguments)
+ 
+    for var in itertools.chain(frame.cached_locals, frame.cached_args):
+        id_ = var.GetID()
+        if id_ not in frame.var_strs:
+            frame.var_strs[id_] = str(var)
+
+    return sorted(frame.var_strs.items())
 
