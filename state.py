@@ -1,7 +1,8 @@
 from typing import Optional
 from concurrent.futures import Future
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 import threading
+import json
 
 import lldb
 import debugger
@@ -76,3 +77,15 @@ def sym_loc(sym: lldb.SBSymbol) -> Loc:
     sym_line = sym.addr.line_entry.line
 
     return Loc(path=sym_path, line=sym_line)
+
+def load(st: State, path: str):
+    with open(path) as f:
+        data = json.load(f)
+        st.exe_params = debugger.ExeParams(**data['exe_params'])
+
+
+def store(st: State, path: str):
+    with open(path, 'w') as f:
+        json.dump({
+            'exe_params': asdict(st.exe_params)
+        }, f)

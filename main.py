@@ -263,6 +263,12 @@ def main():
     io.display_size = size
 
     st = state.create()
+
+    try:
+        state.load(st, 'lodeb.json')
+    except:
+        pass
+
     executor = ThreadPoolExecutor(max_workers=3)
     
     while True:
@@ -295,6 +301,8 @@ def main():
         impl.render(imgui.get_draw_data())
 
         pygame.display.flip()
+
+        state.store(st, 'lodeb.json')
 
 if __name__ == '__main__':
     main()
