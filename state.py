@@ -1,6 +1,7 @@
 from typing import Optional
 from concurrent.futures import Future
 from dataclasses import dataclass, field
+import threading
 
 import lldb
 import debugger
@@ -20,6 +21,21 @@ class SourceFile:
     # line into view. It will then set this to None.
     scroll_to_line: Optional[int]
 
+@dataclass
+class ProcessState:
+    process: lldb.SBProcess
+
+    stopped_at_loc: Optional[Loc] = None
+
+    should_kill: bool = False
+
+    should_step_in: bool = False
+    should_step_over: bool = False
+    should_continue: bool = False
+
+    # We have a thread that monitors the output of the process
+    output_lock: threading.Lock = field(default_factory=threading.Lock)
+    output_buffer: str = ""
 
 @dataclass
 class State:
@@ -42,6 +58,11 @@ class State:
     loc_to_toggle_breakpoint: Optional[Loc] = None
 
     loc_to_breakpoint: dict[Loc, lldb.SBBreakpoint] = field(default_factory=dict)
+
+    should_start: bool = False
+
+    process: Optional[ProcessState] = None
+
 
 def create() -> State:
     return State(

@@ -8,7 +8,9 @@ sys.path.insert(0, '/Applications/Xcode.app/Contents/SharedFrameworks/LLDB.frame
 
 import lldb
 
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
 import pygame
+
 import imgui
 import filedialpy
 import OpenGL.GL as gl
@@ -118,7 +120,12 @@ def win_source_file(st: state.State):
 
         imgui.same_line()
 
-        imgui.text_unformatted(f'{loc.line:5} {line}')
+        text = f'{loc.line:5} {line}'
+
+        if st.process and st.process.stopped_at_loc == loc:
+            imgui.text_colored(text, 0.25, 0.5, 1.0, 1.0)
+        else:
+            imgui.text_unformatted(text)
 
         if st.source_file.scroll_to_line == idx + 1:
             imgui.set_scroll_here_y()
@@ -129,6 +136,32 @@ def win_source_file(st: state.State):
     imgui.end_child()
 
     imgui.end()
+
+def win_debug(st: state.State):
+    if not st.target:
+        # Can't debug anything without a target
+        return
+
+    imgui.begin('Debug')
+
+    if not st.process:
+        st.should_start = imgui.button('Start')
+        imgui.end()
+
+        return
+
+    st.process.should_kill = imgui.button('Kill')
+
+    if st.process.process.state == lldb.eStateStopped:
+        st.process.should_step_in = imgui.button('Step In')
+        imgui.same_line()
+        st.process.should_step_over = imgui.button('Step Over')
+        imgui.same_line()
+        st.process.should_continue = imgui.button('Continue')
+
+    imgui.end()
+
+
 
 def update(st: state.State, executor: ThreadPoolExecutor):
     if st.should_load:
@@ -168,6 +201,48 @@ def update(st: state.State, executor: ThreadPoolExecutor):
 
         st.loc_to_toggle_breakpoint = None
 
+    if not st.process and st.should_start:
+        st.process = state.ProcessState(process=debugger.launch_process(st.target, st.exe_params))
+        st.should_start = False
+
+    if st.process:
+        if st.process.should_kill:
+            # Seems like we must continue before we can kill (assuming it is stopped)
+            st.process.process.Continue()
+            st.process.process.Kill()
+
+            st.process.should_kill = False
+
+        pstate = st.process.process.state
+
+        if pstate == lldb.eStateStopped:
+            thread = st.process.process.GetSelectedThread()
+            frame = thread and thread.GetSelectedFrame()
+            line_entry = frame and frame.line_entry
+
+            if line_entry:
+                new_loc = state.Loc(path=line_entry.file.fullpath, line=line_entry.line)
+
+                if st.process.stopped_at_loc != new_loc:
+                    st.process.stopped_at_loc = new_loc
+                    # Navigate the source view to this loc
+                    st.loc_to_open = new_loc
+
+            if thread:
+                if st.process.should_step_in:
+                    thread.StepInto()
+
+                if st.process.should_step_over:
+                    thread.StepOver()
+
+                if st.process.should_continue:
+                    st.process.process.Continue()
+
+        elif pstate in [lldb.eStateExited, lldb.eStateDetached, lldb.eStateUnloaded] or not st.process.process.is_alive:
+            st.process = None
+        else:
+            st.process.stopped_at_loc = None
+
 
 def main():
     dbg = lldb.SBDebugger.Create()
@@ -205,6 +280,7 @@ def main():
         st.should_load = win_load_executable(st)
         win_target_metadata(st)
         win_source_file(st)
+        win_debug(st)
 
         update(st, executor)
 

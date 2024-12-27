@@ -16,7 +16,7 @@ class FileInfo:
 
 @dataclass
 class TargetMetadata:
-    path_to_files: dict[str, FileInfo] = field(default_factory=lambda: defaultdict(lambda: FileInfo()))
+    path_to_files: dict[str, FileInfo] = field(default_factory=lambda: defaultdict(FileInfo))
 
 def create() -> lldb.SBDebugger:
     dbg = lldb.SBDebugger.Create()
@@ -48,3 +48,6 @@ def get_target_metadata_wait(target: lldb.SBTarget) -> TargetMetadata:
 
 def create_breakpoint_by_file_line(target: lldb.SBTarget, fname: str, line: int) -> lldb.SBBreakpoint:
     return target.BreakpointCreateByLocation(fname, line)
+
+def launch_process(target: lldb.SBTarget, params: ExeParams) -> Optional[lldb.SBProcess]:
+    return target.LaunchSimple(None, None, params.working_dir)
