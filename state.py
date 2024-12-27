@@ -26,8 +26,6 @@ class SourceFile:
 class ProcessState:
     process: lldb.SBProcess
 
-    stopped_at_loc: Optional[Loc] = None
-
     should_kill: bool = False
 
     should_step_in: bool = False
@@ -35,6 +33,8 @@ class ProcessState:
     should_continue: bool = False
 
     run_to_loc: Optional[Loc] = None
+
+    highlight_loc: Optional[Loc] = None
 
 
 @dataclass

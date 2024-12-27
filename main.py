@@ -123,7 +123,7 @@ def win_source_file(st: state.State):
 
         text = f'{loc.line:5} {line}'
 
-        if st.process and st.process.stopped_at_loc == loc:
+        if st.process and st.process.highlight_loc == loc:
             imgui.text_colored(text, 0.25, 0.5, 1.0, 1.0)
         else:
             imgui.text_unformatted(text)
@@ -137,6 +137,16 @@ def win_source_file(st: state.State):
     imgui.end_child()
 
     imgui.end()
+
+
+CSI_PATTERN = re.compile(r'\x1B\[[0-?]*[ -/]*[@-~]')
+OSC_PATTERN = re.compile(r'\x1B\].*?(?:\x07|\x1B\\)', re.DOTALL)
+
+def strip_ansi_codes(text: str) -> str:
+    text = CSI_PATTERN.sub('', text)
+    text = OSC_PATTERN.sub('', text)
+    return text
+
 
 def win_debug(st: state.State):
     if not st.target:
@@ -160,15 +170,30 @@ def win_debug(st: state.State):
         imgui.same_line()
         st.process.should_continue = imgui.button('Continue')
 
+        thread = st.process.process.GetSelectedThread()
+        frames = thread and thread.frames
+
+        if frames:
+            imgui.text('Frames')
+
+            imgui.begin_child('Frames', width=-1, height=100, border=True)
+
+            for frame in frames:
+                frame_info = strip_ansi_codes(str(frame))
+
+                thread = st.process.process.GetSelectedThread()
+                selected_frame = thread and thread.GetSelectedFrame()
+
+                clicked, _ = imgui.selectable(frame_info, frame == selected_frame)
+
+                if clicked:
+                    thread.SetSelectedFrame(frame.idx)
+
+            imgui.end_child()
+
+            
+
     imgui.end()
-
-CSI_PATTERN = re.compile(r'\x1B\[[0-?]*[ -/]*[@-~]')
-OSC_PATTERN = re.compile(r'\x1B\].*?(?:\x07|\x1B\\)', re.DOTALL)
-
-def strip_ansi_codes(text: str) -> str:
-    text = CSI_PATTERN.sub('', text)
-    text = OSC_PATTERN.sub('', text)
-    return text
 
 def win_output(st: state.State):
     if not st.output:
@@ -256,8 +281,8 @@ def update(st: state.State, executor: ThreadPoolExecutor):
             if line_entry:
                 new_loc = state.Loc(path=line_entry.file.fullpath, line=line_entry.line)
 
-                if st.process.stopped_at_loc != new_loc:
-                    st.process.stopped_at_loc = new_loc
+                if st.process.highlight_loc != new_loc:
+                    st.process.highlight_loc = new_loc
                     # Navigate the source view to this loc
                     st.loc_to_open = new_loc
 
@@ -274,7 +299,7 @@ def update(st: state.State, executor: ThreadPoolExecutor):
         elif pstate in [lldb.eStateExited, lldb.eStateDetached, lldb.eStateUnloaded] or not st.process.process.is_alive:
             st.process = None
         else:
-            st.process.stopped_at_loc = None
+            st.process.highlight_loc = None
 
 
 def main():
