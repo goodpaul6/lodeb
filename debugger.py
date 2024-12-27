@@ -105,7 +105,9 @@ def get_frame_var_values(frame: lldb.SBFrame, names: set[str]) -> dict[str, str]
         name = var.name
 
         if name in names and name not in name_to_value:
-            name_to_value[name] = str(var)
+            var_str = str(var)
+            frame.var_name_to_value[name] = var_str
+            name_to_value[name] = var_str
 
     return name_to_value
 
