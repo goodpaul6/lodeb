@@ -281,6 +281,7 @@ def main():
 
     size = 800, 600
 
+    pygame.display.set_caption('Lodeb')
     pygame.display.set_mode(size, pygame.DOUBLEBUF | pygame.OPENGL | pygame.RESIZABLE)
 
     # initilize imgui context (see documentation)
