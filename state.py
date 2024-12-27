@@ -23,6 +23,12 @@ class SourceFile:
     scroll_to_line: Optional[int] = None
 
 @dataclass
+class VarState:
+    names: list[str]
+    expanded_names: set[str] = field(default_factory=set)
+    name_values: dict[str, str] = field(default_factory=dict)
+
+@dataclass
 class ProcessState:
     process: lldb.SBProcess
 
@@ -38,8 +44,7 @@ class ProcessState:
     selected_frame: Optional[lldb.SBFrame] = None
     highlight_loc: Optional[Loc] = None
 
-    frame_var_id_to_str: Optional[Future[list[tuple[str, str]]]] = None
-
+    var_state: Optional[VarState] = None
 
 @dataclass
 class State:

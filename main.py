@@ -190,16 +190,24 @@ def win_debug(st: state.State):
 
             imgui.end_child()
 
-        if selected_frame and st.process.frame_var_id_to_str:
+        if selected_frame and st.process.var_state:
             imgui.text('Locals')
 
             imgui.begin_child('Locals', width=-1, height=200, border=True)
 
-            if not st.process.frame_var_id_to_str.done():
-                imgui.text('Loading locals (LLDB is slow)...')
-            else:
-                for var_id, s in st.process.frame_var_id_to_str.result():
-                    clicked, _ = imgui.selectable(s, False)
+            for name in st.process.var_state.names:
+                if imgui.tree_node(name):
+                    # Make sure the value will be filled in if it isn't already
+                    st.process.var_state.expanded_names.add(name)
+
+                    value = st.process.var_state.name_values.get(name)
+
+                    if value:
+                        imgui.text_unformatted(value)
+
+                    imgui.tree_pop()
+                else:
+                    st.process.var_state.expanded_names.discard(name)
 
             imgui.end_child() 
     else:
@@ -299,34 +307,43 @@ def update(st: state.State, executor: ThreadPoolExecutor):
                     st.loc_to_open = new_loc
 
             if thread:
+                invalidate_state = False
+
                 if st.process.should_step_in:
                     thread.StepInto()
-                    st.process.selected_frame = None
+                    invalidate_state = True
 
                 if st.process.should_step_over:
                     thread.StepOver() 
-                    st.process.selected_frame = None
+                    invalidate_state = True
 
                 if st.process.should_continue:
                     st.process.process.Continue()
-                    st.process.selected_frame = None
+                    invalidate_state = True
 
                 lldb_selected_frame = thread.GetSelectedFrame()
 
                 # Update it as needed but cache otherwise
-                if not st.process.selected_frame or lldb_selected_frame.GetFrameID() != st.process.selected_frame.GetFrameID():
+                if invalidate_state or \
+                   not st.process.selected_frame or \
+                   lldb_selected_frame.GetFrameID() != st.process.selected_frame.GetFrameID():
                     st.process.selected_frame = lldb_selected_frame
+                    st.process.var_state = state.VarState(
+                        names=debugger.get_frame_var_names(st.process.selected_frame)
+                    )
 
-                    # TODO(Apaar): When I run this on another thread, the entire program goes wonky. Is LLDB process/frame API not
-                    # thread safe?
-                    st.process.frame_var_id_to_str = Future()
-                    st.process.frame_var_id_to_str.set_result(debugger.get_frame_var_strs(lldb_selected_frame))
+                if st.process.var_state.expanded_names:
+                    st.process.var_state.name_values = debugger.get_frame_var_values(
+                        st.process.selected_frame,
+                        st.process.var_state.expanded_names,
+                    )
 
         elif pstate in [lldb.eStateExited, lldb.eStateDetached, lldb.eStateUnloaded] or not st.process.process.is_alive:
             st.process = None
         else:
             st.process.highlight_loc = None
             st.process.selected_frame = None
+            st.process.var_state = None
 
 
 def main():

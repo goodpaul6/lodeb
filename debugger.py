@@ -78,16 +78,35 @@ def launch_process(target: lldb.SBTarget, params: ExeParams, output: ProcessOutp
 
     return process
 
-def get_frame_var_strs(frame: lldb.SBFrame) -> list[tuple[str, str]]:
-    if not hasattr(frame, 'var_strs'):
-        setattr(frame, 'var_strs', {})
+def get_frame_var_names(frame: lldb.SBFrame) -> list[str]:
+    if not hasattr(frame, 'var_names'):
+        names = []
+
+        for var in itertools.chain(frame.locals, frame.arguments):
+            names.append(var.name)
+
+        setattr(frame, 'var_names', names)
+
+    return frame.var_names
+
+def get_frame_var_values(frame: lldb.SBFrame, names: set[str]) -> dict[str, str]:
+    if not hasattr(frame, 'var_name_to_value'):
+        setattr(frame, 'var_name_to_value', {})
         setattr(frame, 'cached_locals', frame.locals)
         setattr(frame, 'cached_args', frame.arguments)
- 
-    for var in itertools.chain(frame.cached_locals, frame.cached_args):
-        id_ = var.GetID()
-        if id_ not in frame.var_strs:
-            frame.var_strs[id_] = str(var)
 
-    return sorted(frame.var_strs.items())
+    name_to_value = {}
+
+    for name in names:
+        if name in frame.var_name_to_value:
+            name_to_value[name] = frame.var_name_to_value[name]
+
+    for var in itertools.chain(frame.cached_locals, frame.cached_args):
+        name = var.name
+
+        if name in names and name not in name_to_value:
+            name_to_value[name] = str(var)
+
+    return name_to_value
+
 
