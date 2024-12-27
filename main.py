@@ -162,10 +162,7 @@ def win_debug(st: state.State):
 
     imgui.end()
 
-# Pattern to match CSI (Control Sequence Introducer) sequences
 CSI_PATTERN = re.compile(r'\x1B\[[0-?]*[ -/]*[@-~]')
-
-# Pattern to match OSC (Operating System Command) sequences
 OSC_PATTERN = re.compile(r'\x1B\].*?(?:\x07|\x1B\\)', re.DOTALL)
 
 def strip_ansi_codes(text: str) -> str:
