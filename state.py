@@ -34,9 +34,8 @@ class ProcessState:
     should_step_over: bool = False
     should_continue: bool = False
 
-    # We have a thread that monitors the output of the process
-    output_lock: threading.Lock = field(default_factory=threading.Lock)
-    output_buffer: str = ""
+    run_to_loc: Optional[Loc] = None
+
 
 @dataclass
 class State:
@@ -63,6 +62,7 @@ class State:
     should_start: bool = False
 
     process: Optional[ProcessState] = None
+    output: Optional[debugger.ProcessOutput] = None
 
 
 def create() -> State:

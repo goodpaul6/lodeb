@@ -3,6 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import sys
 import os.path
+import re
 
 sys.path.insert(0, '/Applications/Xcode.app/Contents/SharedFrameworks/LLDB.framework/Resources/Python')
 
@@ -161,6 +162,31 @@ def win_debug(st: state.State):
 
     imgui.end()
 
+# Pattern to match CSI (Control Sequence Introducer) sequences
+CSI_PATTERN = re.compile(r'\x1B\[[0-?]*[ -/]*[@-~]')
+
+# Pattern to match OSC (Operating System Command) sequences
+OSC_PATTERN = re.compile(r'\x1B\].*?(?:\x07|\x1B\\)', re.DOTALL)
+
+def strip_ansi_codes(text: str) -> str:
+    text = CSI_PATTERN.sub('', text)
+    text = OSC_PATTERN.sub('', text)
+    return text
+
+def win_output(st: state.State):
+    if not st.output:
+        return
+
+    imgui.begin('Process Output')
+    imgui.begin_child('Text', width=-1, height=-1, border=True)
+
+    with st.output.lock:
+        text = strip_ansi_codes(st.output.buffer)
+
+    imgui.text_unformatted(text)
+
+    imgui.end_child()
+    imgui.end()
 
 
 def update(st: state.State, executor: ThreadPoolExecutor):
@@ -202,7 +228,12 @@ def update(st: state.State, executor: ThreadPoolExecutor):
         st.loc_to_toggle_breakpoint = None
 
     if not st.process and st.should_start:
-        st.process = state.ProcessState(process=debugger.launch_process(st.target, st.exe_params))
+        # Make a new output object (discard previous output)
+        st.output = debugger.ProcessOutput()
+
+        process = debugger.launch_process(st.target, st.exe_params, st.output)
+
+        st.process = state.ProcessState(process=process)
         st.should_start = False
 
     if st.process:
@@ -287,6 +318,7 @@ def main():
         win_target_metadata(st)
         win_source_file(st)
         win_debug(st)
+        win_output(st)
 
         update(st, executor)
 

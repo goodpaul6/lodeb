@@ -1,7 +1,9 @@
+import os
 from typing import Optional
 from collections import defaultdict
 from dataclasses import dataclass, field
 from concurrent.futures import Future, ThreadPoolExecutor
+from threading import Thread, Lock
 
 import lldb
 
@@ -17,6 +19,12 @@ class FileInfo:
 @dataclass
 class TargetMetadata:
     path_to_files: dict[str, FileInfo] = field(default_factory=lambda: defaultdict(FileInfo))
+
+@dataclass
+class ProcessOutput:
+    lock: Lock = field(default_factory=Lock)
+    buffer: str = ""
+
 
 def create() -> lldb.SBDebugger:
     dbg = lldb.SBDebugger.Create()
@@ -49,5 +57,23 @@ def get_target_metadata_wait(target: lldb.SBTarget) -> TargetMetadata:
 def create_breakpoint_by_file_line(target: lldb.SBTarget, fname: str, line: int) -> lldb.SBBreakpoint:
     return target.BreakpointCreateByLocation(fname, line)
 
-def launch_process(target: lldb.SBTarget, params: ExeParams) -> Optional[lldb.SBProcess]:
-    return target.LaunchSimple(None, None, params.working_dir)
+def launch_process(target: lldb.SBTarget, params: ExeParams, output: ProcessOutput) -> Optional[lldb.SBProcess]:
+    li = lldb.SBLaunchInfo([])
+    li.SetWorkingDirectory(params.working_dir)
+
+    def read_into_output(process: lldb.SBProcess, output: ProcessOutput):
+        while True:
+            chunk = process.GetSTDOUT(1024)
+            other_chunk = process.GetSTDERR(1024)
+
+            with output.lock:
+                output.buffer += chunk
+                output.buffer += other_chunk
+
+    process = target.Launch(li, lldb.SBError())
+
+    read_thread = Thread(target=read_into_output, args=(process, output), daemon=True)
+    read_thread.start()
+
+    return process
+
