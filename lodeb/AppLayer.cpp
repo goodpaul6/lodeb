@@ -6,9 +6,32 @@
 #include <lldb/API/LLDB.h>
 
 #include "ParseCommand.hpp"
+#include "Log.hpp"
 
 namespace {
+    using namespace lodeb;
+
     const char* COMMAND_BAR_POPUP_NAME = "Command Bar";
+
+    std::optional<FileLoc> SymLoc(lldb::SBSymbol& sym) {
+        auto addr = sym.GetStartAddress();
+        
+        if(!addr.IsValid()) {
+            return std::nullopt;
+        }
+
+        auto le = addr.GetLineEntry();
+        auto fs = le.GetFileSpec();
+
+        char buf[1024];
+
+        fs.GetPath(buf, sizeof(buf));
+
+        return FileLoc{
+            .path = buf,
+            .line = static_cast<int>(le.GetLine()),
+        };
+    }
 }
 
 namespace lodeb {
@@ -97,6 +120,16 @@ namespace lodeb {
                     ImGui::PushID(sym_i);
 
                     if(ImGui::Selectable(sym.GetName())) {
+                        auto loc = SymLoc(sym);
+
+                        if(loc) {
+                            ViewSourceEvent event{*loc};
+
+                            LogInfo("Pushing ViewSourceEvent {}", *loc);
+
+                            state.events.push_back(std::move(event));
+                        }
+
                         ImGui::CloseCurrentPopup();
                     }
 

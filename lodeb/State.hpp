@@ -4,6 +4,7 @@
 #include <string>
 #include <variant>
 #include <vector>
+#include <format>
 
 #include <lldb/API/LLDB.h>
 
@@ -68,3 +69,16 @@ namespace lodeb {
         void ProcessEvents();
     };
 }
+
+template <>
+struct std::formatter<lodeb::FileLoc> {
+    template <typename ParseContext>
+    constexpr ParseContext::iterator parse(ParseContext& ctx) const {
+        return ctx.begin();
+    }
+
+    template <typename FmtContext>
+    FmtContext::iterator format(lodeb::FileLoc loc, FmtContext& ctx) const {
+        return std::format_to(ctx.out(), "{}:{}", loc.path, loc.line);
+    }
+};
