@@ -63,16 +63,6 @@ namespace lodeb {
     }
 
     void AppLayer::WindowCommandBar() {
-        auto& input = Application::GetInput();
-
-        if(input.GetKeyState(KeyCode::P) == KeyState::Pressed &&
-           (input.IsKeyDown(KeyCode::LeftControl) || 
-            input.IsKeyDown(KeyCode::RightControl) ||
-            input.IsKeyDown(KeyCode::LeftSuper) ||
-            input.IsKeyDown(KeyCode::RightSuper))) {
-            ImGui::OpenPopup(COMMAND_BAR_POPUP_NAME);
-        }
-
         auto handle_parsed_command = [&](ParsedCommand& parsed) {
             auto& target_state = state.target_state;
 
@@ -106,7 +96,9 @@ namespace lodeb {
 
                     ImGui::PushID(sym_i);
 
-                    ImGui::Selectable(sym.GetName());
+                    if(ImGui::Selectable(sym.GetName())) {
+                        ImGui::CloseCurrentPopup();
+                    }
 
                     ImGui::PopID();
                 }
@@ -116,6 +108,16 @@ namespace lodeb {
 
             ImGui::EndChild();
         };
+
+        auto& input = Application::GetInput();
+
+        if(input.GetKeyState(KeyCode::P) == KeyState::Pressed &&
+           (input.IsKeyDown(KeyCode::LeftControl) || 
+            input.IsKeyDown(KeyCode::RightControl) ||
+            input.IsKeyDown(KeyCode::LeftSuper) ||
+            input.IsKeyDown(KeyCode::RightSuper))) {
+            ImGui::OpenPopup(COMMAND_BAR_POPUP_NAME);
+        }
 
         if(ImGui::BeginPopup(COMMAND_BAR_POPUP_NAME)) {
             if(!state.cmd_bar_state) {
