@@ -1,9 +1,12 @@
 #include <Application.hpp>
+#include <lldb/API/LLDB.h>
 
 #include "lodeb/AppLayer.hpp"
 
 int main(int, char**)
 {
+    lldb::SBDebugger::Initialize();
+
     Scaffold::Manifest manifest = {};
 
     manifest.title = "Lodeb";
@@ -23,6 +26,8 @@ int main(int, char**)
     app.CreateObject<lodeb::AppLayer>("App");
 
     app.Run();
+
+    lldb::SBDebugger::Terminate();
 
     return 0;
 }
