@@ -70,7 +70,7 @@ def win_target_metadata(st: state.State):
 
     nav_to_tree = imgui.is_item_active() and imgui.is_key_pressed(imgui.KEY_DOWN_ARROW)
 
-    imgui.begin_child('Files')
+    imgui.begin_child('Files', flags=imgui.WINDOW_HORIZONTAL_SCROLLING_BAR | imgui.WINDOW_ALWAYS_VERTICAL_SCROLLBAR)
 
     first_item = True
 

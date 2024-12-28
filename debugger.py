@@ -123,5 +123,3 @@ def get_frame_var_values(frame: lldb.SBFrame, names: set[str]) -> dict[str, str]
             name_to_value[name] = var_str
 
     return name_to_value
-
-
