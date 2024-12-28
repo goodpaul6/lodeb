@@ -62,7 +62,7 @@ namespace lodeb {
     }
     
     void AppLayer::OnUpdate(float) {
-        state.ProcessEvents();
+        state.Update();
         state.Store(STATE_PATH);
     }
 
@@ -70,6 +70,8 @@ namespace lodeb {
         WindowTargetSettings();
         WindowCommandBar();
         WindowSourceView();
+        WindowProcessOutput();
+        WindowDebug();
     }
 
     void AppLayer::WindowTargetSettings() {
@@ -127,7 +129,7 @@ namespace lodeb {
             }
 
             // TODO(Apaar): Handle file search
-            ImGui::BeginChild("##symbols", {300, 300}, ImGuiChildFlags_NavFlattened);
+            ImGui::BeginChild("##symbols", {400, 300}, ImGuiChildFlags_NavFlattened);
             
             for(auto mod_i = 0u; mod_i < target_state->target.GetNumModules(); mod_i++) {
                 auto mod = target_state->target.GetModuleAtIndex(mod_i);
@@ -178,6 +180,15 @@ namespace lodeb {
             ImGui::OpenPopup(COMMAND_BAR_POPUP_NAME);
         }
 
+        auto* viewport = ImGui::GetMainViewport();
+
+        ImGui::SetNextWindowPos(
+            {viewport->Pos.x + viewport->Size.x * 0.5f,
+             viewport->Pos.y + 200},
+            ImGuiCond_Appearing,
+            {0.5f, 0.5f}
+        );
+
         if(!ImGui::BeginPopup(COMMAND_BAR_POPUP_NAME)) {
             state.cmd_bar_state.reset();
             return;
@@ -191,6 +202,8 @@ namespace lodeb {
             ImGui::SetKeyboardFocusHere();
             state.cmd_bar_state->focused_text = true;
         }
+
+        ImGui::SetNextItemWidth(400.0f);
 
         ImGui::InputText("##command_bar_text", &state.cmd_bar_state->text);
 
@@ -238,6 +251,41 @@ namespace lodeb {
         source_view_state->scroll_to_line.reset();
 
         ImGui::EndChild();
+
+        ImGui::End();
+    }
+
+    void AppLayer::WindowProcessOutput() {
+        ImGui::Begin("Process Output");
+
+        ImGui::BeginChild("##text", {-1, -1}, ImGuiChildFlags_Border);
+
+        ImGui::TextUnformatted(state.process_output.c_str());
+
+        ImGui::EndChild();
+        ImGui::End();
+    }
+
+    void AppLayer::WindowDebug() {
+        ImGui::Begin("Debug");
+
+        if(!state.target_state) {
+            ImGui::Text("No target loaded");
+
+            ImGui::End();
+            return;
+        }
+
+        if(!state.target_state->process_state) {
+            if(ImGui::Button("Start")) {
+                state.events.push_back(StartProcessEvent{});
+            }
+            
+            ImGui::End();
+            return;
+        }
+
+        ImGui::Text("Running...");
 
         ImGui::End();
     }

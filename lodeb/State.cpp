@@ -1,6 +1,7 @@
 #include "State.hpp"
 
 #include <fstream>
+#include <cassert>
 
 #include <lldb/API/LLDB.h>
 
@@ -21,6 +22,14 @@ namespace lodeb {
         std::string buf;
         int version = 1;
 
+        auto init = [&]<typename T>(std::optional<T>& opt) -> std::optional<T>& {
+            if(!opt) {
+                opt.emplace();
+            }
+
+            return opt;
+        };
+
         for(;;) {
             if(!(file >> buf)) {
                 break;
@@ -36,6 +45,10 @@ namespace lodeb {
 
             if(buf == "target_settings.working_dir") {
                 file >> std::ws >> std::quoted(target_settings.working_dir);
+            }
+
+            if(buf == "source_view_state.path") {
+                file >> std::ws >> std::quoted(init(source_view_state)->path);
             }
         }
 
@@ -53,9 +66,59 @@ namespace lodeb {
 
         file << "target_settings.exe_path " << std::quoted(target_settings.exe_path) << '\n';
         file << "target_settings.working_dir " << std::quoted(target_settings.working_dir) << '\n';
+
+        if(source_view_state) {
+            file << "source_view_state.path " << std::quoted(source_view_state->path) << '\n';
+        }
     }
 
-    void State::ProcessEvents() {
+    void State::Update() {
+        auto handle_process = [&] {
+            if(!target_state || !target_state->process_state) {
+                return;
+            }
+
+            auto& ps = *target_state->process_state;
+
+            // Listen for process events
+            lldb::SBEvent process_event;
+
+            while(ps.listener.GetNextEvent(process_event)) {
+                auto state = lldb::SBProcess::GetStateFromEvent(process_event);
+
+                if(state == lldb::eStateStopped) {
+                    LogInfo("Process stopped");
+
+                } else if(state == lldb::eStateExited || state == lldb::eStateDetached || state == lldb::eStateUnloaded) {
+                    LogInfo("Process exited");
+
+                    // All done, stop
+                    target_state->process_state.reset();
+                    return;
+                }
+            }
+
+            
+            // Poll the output
+            char buf[2048] = {0};
+
+            size_t n = ps.process.GetSTDOUT(buf, sizeof(buf) - 1);
+            if(n >= 0) {
+                buf[n] = '\0';
+            }
+
+            process_output += buf;
+
+            n = ps.process.GetSTDERR(buf, sizeof(buf) - 1);
+            if(n >= 0) {
+                buf[n] = '\0';
+            }
+
+            process_output += buf;
+        };
+
+        handle_process();
+
         for(const auto& event : events) {
             if(auto* load_target = std::get_if<LoadTargetEvent>(&event)) {
                 target_state = {
@@ -64,14 +127,43 @@ namespace lodeb {
                 
                 LogInfo("Created target {}", target_settings.exe_path);
             } else if(auto* view_source = std::get_if<ViewSourceEvent>(&event)) {
+                LogDebug("View source event {}", view_source->loc);
+
                 if(source_view_state && source_view_state->path == view_source->loc.path) {
                     source_view_state->scroll_to_line = view_source->loc.line;
                 } else {
                     source_view_state = {
-                        .path = view_source->loc.path,
+                        // We shant access the loc path again since we're clearing out these events
+                        .path = std::move(view_source->loc.path),
                         .scroll_to_line = view_source->loc.line,
                     };
                 }
+            } else if (auto* start_process = std::get_if<StartProcessEvent>(&event)) {
+                assert(target_state);
+                process_output.clear();
+
+                auto listener = debugger.GetListener();
+
+                lldb::SBLaunchInfo li{nullptr};
+
+                li.SetWorkingDirectory(target_settings.working_dir.c_str());
+                li.SetListener(listener);
+
+                lldb::SBError err;
+
+                auto process = target_state->target.Launch(li, err);
+                
+                if(!process.IsValid() || err.Fail()) {
+                    LogError("Failed to start process: {}", err.GetCString());
+                    continue;
+                }
+
+                LogInfo("Started process {}", target_settings.exe_path);
+
+                target_state->process_state = {
+                    .listener = std::move(listener),
+                    .process = std::move(process),
+                };
             }
         }
 

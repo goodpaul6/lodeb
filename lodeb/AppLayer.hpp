@@ -18,5 +18,7 @@ namespace lodeb {
         void WindowTargetSettings();
         void WindowCommandBar();
         void WindowSourceView();
+        void WindowProcessOutput();
+        void WindowDebug();
     };
 }

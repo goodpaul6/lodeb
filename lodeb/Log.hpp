@@ -29,7 +29,17 @@ namespace lodeb {
     }
 
     template <typename... Args>
+    void LogDebug(std::format_string<Args...> fmt, Args&&... args) {
+       Log(LogLevel::Debug, fmt, std::forward<Args>(args)...); 
+    }
+
+    template <typename... Args>
     void LogInfo(std::format_string<Args...> fmt, Args&&... args) {
        Log(LogLevel::Info, fmt, std::forward<Args>(args)...); 
+    }
+
+    template <typename... Args>
+    void LogError(std::format_string<Args...> fmt, Args&&... args) {
+       Log(LogLevel::Error, fmt, std::forward<Args>(args)...); 
     }
 }

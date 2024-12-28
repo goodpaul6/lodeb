@@ -5,6 +5,7 @@
 #include <variant>
 #include <vector>
 #include <format>
+#include <memory>
 
 #include <lldb/API/LLDB.h>
 
@@ -19,8 +20,15 @@ namespace lodeb {
         std::string working_dir;
     };
 
+    struct ProcessState {
+        lldb::SBListener listener;
+        lldb::SBProcess process;
+    };
+
     struct TargetState {
         lldb::SBTarget target;
+
+        std::optional<ProcessState> process_state;
     };
 
     struct CommandBarState {
@@ -36,10 +44,6 @@ namespace lodeb {
         std::optional<int> scroll_to_line;
     };
     
-    struct ProcessState {
-        lldb::SBProcess process;
-    };
-
     struct LoadTargetEvent {};
     struct ViewSourceEvent {
         FileLoc loc;
@@ -62,7 +66,10 @@ namespace lodeb {
         std::optional<CommandBarState> cmd_bar_state;
         std::optional<SourceViewState> source_view_state;
         std::optional<TargetState> target_state;
-        std::optional<ProcessState> process_state;
+
+        // This is retained at the top level so that we have it
+        // even if the previous process/target went away.
+        std::string process_output;
 
         State();
         ~State();    
@@ -70,7 +77,7 @@ namespace lodeb {
         void Load(const char* path);
         void Store(const char* path);
 
-        void ProcessEvents();
+        void Update();
     };
 }
 
