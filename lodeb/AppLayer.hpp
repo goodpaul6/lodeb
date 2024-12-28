@@ -7,6 +7,8 @@
 namespace lodeb {
     class AppLayer: public Scaffold::IRenderUI, public Scaffold::IUpdate {
     public:
+        AppLayer();
+
         void OnUpdate(float dt) override;
         void OnRenderUI(float dt) override;
 

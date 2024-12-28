@@ -15,6 +15,7 @@ namespace {
     using namespace lodeb;
 
     const char* COMMAND_BAR_POPUP_NAME = "Command Bar";
+    const char* STATE_PATH = "lodeb.txt";
 
     std::optional<FileLoc> SymLoc(lldb::SBSymbol& sym) {
         auto addr = sym.GetStartAddress();
@@ -55,9 +56,14 @@ namespace {
 
 namespace lodeb {
     using namespace Scaffold;
+
+    AppLayer::AppLayer() {
+        state.Load(STATE_PATH);
+    }
     
     void AppLayer::OnUpdate(float) {
         state.ProcessEvents();
+        state.Store(STATE_PATH);
     }
 
     void AppLayer::OnRenderUI(float) {
@@ -211,7 +217,7 @@ namespace lodeb {
 
         ImGui::TextUnformatted(source_view_state->path.c_str());
 
-        ImGui::BeginChild("##text", {-1, -1});
+        ImGui::BeginChild("##text", {-1, -1}, ImGuiChildFlags_Border, ImGuiWindowFlags_NoNav);;
 
         std::string line_buf;
 

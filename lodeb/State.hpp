@@ -67,6 +67,9 @@ namespace lodeb {
         State();
         ~State();    
 
+        void Load(const char* path);
+        void Store(const char* path);
+
         void ProcessEvents();
     };
 }
