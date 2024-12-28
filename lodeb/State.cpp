@@ -21,6 +21,15 @@ namespace lodeb {
                 };
                 
                 LogInfo("Created target {}", target_settings.exe_path);
+            } else if(auto* view_source = std::get_if<ViewSourceEvent>(&event)) {
+                if(source_view_state && source_view_state->path == view_source->loc.path) {
+                    source_view_state->scroll_to_line = view_source->loc.line;
+                } else {
+                    source_view_state = {
+                        .path = view_source->loc.path,
+                        .scroll_to_line = view_source->loc.line,
+                    };
+                }
             }
         }
 

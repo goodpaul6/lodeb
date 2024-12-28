@@ -60,6 +60,7 @@ namespace lodeb {
         TargetSettings target_settings;
 
         std::optional<CommandBarState> cmd_bar_state;
+        std::optional<SourceViewState> source_view_state;
         std::optional<TargetState> target_state;
         std::optional<ProcessState> process_state;
 

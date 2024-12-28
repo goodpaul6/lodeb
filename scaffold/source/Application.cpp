@@ -65,9 +65,7 @@ Scaffold::Application::Application(const Manifest manifest)
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
-
-    // NOTE(Apaar): Docking active always
-    // io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;     // Enable Docking
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;     // Enable Docking
 
     ImGui::StyleColorsDark();
 
@@ -156,8 +154,7 @@ void Scaffold::Application::Run()
 
             if (m_manifest.dockspaceOverViewport)
             {
-                // NOTE(Apaar): Always active in current version of imgui
-                // ImGui::DockSpaceOverViewport();
+                ImGui::DockSpaceOverViewport();
             }
         }
         profiler.EndMarker();

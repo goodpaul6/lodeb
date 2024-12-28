@@ -4,6 +4,9 @@
 #include <imgui_stdlib.h>
 #include <tinyfiledialogs.h>
 #include <lldb/API/LLDB.h>
+#include <sstream>
+
+#include <stdio.h>
 
 #include "ParseCommand.hpp"
 #include "Log.hpp"
@@ -32,6 +35,22 @@ namespace {
             .line = static_cast<int>(le.GetLine()),
         };
     }
+
+    bool ReadEntireFileInto(const char* path, std::string& into) {
+        FILE* f = fopen(path, "rb");
+
+        fseek(f, 0, SEEK_END);
+        size_t size = ftell(f);
+
+        into.resize(size);
+
+        rewind(f);
+        size_t n = fread(into.data(), 1, size, f);
+
+        fclose(f);
+
+        return n == size;
+    }
 }
 
 namespace lodeb {
@@ -44,6 +63,7 @@ namespace lodeb {
     void AppLayer::OnRenderUI(float) {
         WindowTargetSettings();
         WindowCommandBar();
+        WindowSourceView();
     }
 
     void AppLayer::WindowTargetSettings() {
@@ -174,5 +194,34 @@ namespace lodeb {
     }
 
     void AppLayer::WindowSourceView() {
+        auto& source_view_state = state.source_view_state;
+
+        if(!source_view_state) {
+            return;
+        }
+
+        if(!source_view_state->path.empty() &&
+            source_view_state->text.empty()) {
+            ReadEntireFileInto(source_view_state->path.c_str(), source_view_state->text);            
+            LogInfo("Loaded file {}", source_view_state->path);
+        }
+
+        ImGui::Begin("Source View");
+
+        ImGui::Text("Path: %s", source_view_state->path.c_str());
+
+        ImGui::BeginChild("##text", {-1, -1});
+
+        std::string line_buf;
+
+        std::istringstream ss{source_view_state->text};
+
+        for(std::string line; std::getline(ss, line);) {
+            ImGui::TextUnformatted(line.c_str());
+        }
+
+        ImGui::EndChild();
+
+        ImGui::End();
     }
 }
