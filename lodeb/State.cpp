@@ -38,6 +38,12 @@ namespace lodeb {
                 file >> std::ws >> std::quoted(target_settings.working_dir);
             }
         }
+
+        if(!target_settings.exe_path.empty()) {
+            // Request a target load right away because 99% chance we're just testing
+            // the same binary
+            events.push_back(LoadTargetEvent{});
+        }
     }
 
     void State::Store(const char* path) {
