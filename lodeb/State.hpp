@@ -2,6 +2,8 @@
 
 #include <optional>
 #include <string>
+#include <variant>
+#include <vector>
 
 #include <lldb/API/LLDB.h>
 
@@ -15,14 +17,24 @@ namespace lodeb {
         lldb::SBTarget target;
     };
 
+    struct RequestLoadTargetEvent {};
+
+    using StateEvent = std::variant<RequestLoadTargetEvent>;
+
     struct State {
         lldb::SBDebugger debugger;
+
+        std::vector<StateEvent> events;
 
         TargetSettings target_settings;
 
         std::optional<TargetState> target_state;
 
         State();
-        ~State();
+        ~State();    
+
+        void ProcessEvents();
     };
+
+    void ProcessEvents(State& state);
 }

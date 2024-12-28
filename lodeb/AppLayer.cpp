@@ -5,10 +5,16 @@
 #include <tinyfiledialogs.h>
 #include <lldb/API/LLDB.h>
 
-namespace {
-    using namespace lodeb;
+namespace lodeb {
+    void AppLayer::OnUpdate(float) {
+        state.ProcessEvents();
+    }
 
-    void WindowTargetSettings(State& state) {
+    void AppLayer::OnRenderUI(float) {
+        WindowTargetSettings();
+    }
+
+    void AppLayer::WindowTargetSettings() {
         ImGui::Begin("Target Settings");
 
         ImGui::InputText("Exe Path", &state.target_settings.exe_path);
@@ -40,12 +46,10 @@ namespace {
             }
         }
 
-        ImGui::End();
-    }
-}
+        if(ImGui::Button("Load Target")) {
+            state.events.push_back(RequestLoadTargetEvent{});
+        }
 
-namespace lodeb {
-    void AppLayer::OnRenderUI(float) {
-        WindowTargetSettings(state);
+        ImGui::End();
     }
 }
