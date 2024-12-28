@@ -6,6 +6,7 @@
 #include <lldb/API/LLDB.h>
 
 #include "Log.hpp"
+#include "LLDBUtil.hpp"
 
 namespace lodeb {
     State::State() : debugger{lldb::SBDebugger::Create()} {
@@ -73,6 +74,8 @@ namespace lodeb {
     }
 
     void State::Update() {
+        std::vector<StateEvent> new_events;
+
         auto handle_process = [&] {
             if(!target_state || !target_state->process_state) {
                 return;
@@ -89,12 +92,19 @@ namespace lodeb {
                 if(state == lldb::eStateStopped) {
                     LogInfo("Process stopped");
 
-                    // Select the thread which was stopped due to breakpoint
+                    // Select the thread which was stopped due to breakpoint/step
                     for(auto i = 0u; i < ps.process.GetNumThreads(); ++i) {
                         auto t = ps.process.GetThreadAtIndex(i);
 
-                        if(t.GetStopReason() == lldb::eStopReasonBreakpoint) {
+                        if(t.GetStopReason() == lldb::eStopReasonBreakpoint ||
+                           t.GetStopReason() == lldb::eStopReasonPlanComplete) {
                             ps.process.SetSelectedThread(t);
+
+                            auto loc = ThreadLoc(t);
+
+                            if(loc) {
+                                new_events.push_back(ViewSourceEvent{std::move(*loc)});
+                            }
                             break;
                         }
                     }
@@ -193,10 +203,28 @@ namespace lodeb {
                 LogInfo("Removing breakpoint from {}", toggle_bp->loc);
 
                 target_state->loc_to_breakpoint.erase(found);
+            } else if (auto* change_state = std::get_if<ChangeDebugStateEvent>(&event)) {
+                assert(target_state);
+                assert(target_state->process_state);
+
+                LogInfo("Handling change debug state event kind={}", static_cast<int>(change_state->kind));
+
+                auto& ps = *target_state->process_state;
+
+                assert(ps.process.GetState() == lldb::eStateStopped);
+
+                auto thread = ps.process.GetSelectedThread();
+
+                switch(change_state->kind) {
+                    case ChangeDebugStateEvent::Kill: ps.process.Kill(); break;
+                    case ChangeDebugStateEvent::StepIn: thread.StepInto(); break;
+                    case ChangeDebugStateEvent::StepOver: thread.StepOver(); break;
+                    case ChangeDebugStateEvent::Continue: ps.process.Continue(); break;
+                }
             }
         }
 
-        events.clear();
+        events = std::move(new_events);
     }
 }
 

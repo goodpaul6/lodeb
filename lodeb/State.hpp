@@ -70,11 +70,23 @@ namespace lodeb {
         FileLoc loc;
     };
 
+    struct ChangeDebugStateEvent {
+        enum Kind {
+            Kill,
+            StepIn,
+            StepOver,
+            Continue,
+        };
+
+        Kind kind = Kill;
+    };
+
     using StateEvent = std::variant<
         LoadTargetEvent, 
         ViewSourceEvent,
         StartProcessEvent,
-        ToggleBreakpointEvent
+        ToggleBreakpointEvent,
+        ChangeDebugStateEvent
     >;
 
     struct State {

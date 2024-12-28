@@ -10,52 +10,13 @@
 
 #include "ParseCommand.hpp"
 #include "Log.hpp"
+#include "LLDBUtil.hpp"
 
 namespace {
     using namespace lodeb;
 
     const char* COMMAND_BAR_POPUP_NAME = "Command Bar";
     const char* STATE_PATH = "lodeb.txt";
-
-    std::optional<FileLoc> LineEntryLoc(const lldb::SBLineEntry& le) {
-        if(!le.IsValid()) {
-            return std::nullopt;
-        }
-
-        auto fs = le.GetFileSpec();
-
-        char buf[1024];
-
-        fs.GetPath(buf, sizeof(buf));
-
-        return FileLoc{
-            .path = buf,
-            .line = static_cast<int>(le.GetLine()),
-        };
-    }
-
-    std::optional<FileLoc> AddrLoc(lldb::SBAddress& addr) {
-        if(!addr.IsValid()) {
-            return std::nullopt;
-        }
-
-        auto le = addr.GetLineEntry();
-        return LineEntryLoc(le);
-    }
-
-    std::optional<FileLoc> SymLoc(lldb::SBSymbol& sym) {
-        auto addr = sym.GetStartAddress();
-        return AddrLoc(addr);
-    }
-    
-    std::optional<FileLoc> FrameLoc(lldb::SBFrame& frame) {
-        if(!frame.IsValid()) {
-            return std::nullopt;
-        }
-
-        auto le = frame.GetLineEntry();
-        return LineEntryLoc(le);
-    }
 
     bool ReadEntireFileInto(const char* path, std::string& into) {
         FILE* f = fopen(path, "rb");
@@ -242,7 +203,8 @@ namespace lodeb {
 
         auto get_cur_frame_loc = [&]() -> std::optional<FileLoc> {
             if(!state.target_state ||
-               !state.target_state->process_state) {
+               !state.target_state->process_state &&
+               state.target_state->process_state->process.GetState() != lldb::eStateStopped) {
                 return std::nullopt;
             }
 
@@ -362,7 +324,32 @@ namespace lodeb {
             return;
         }
 
-        ImGui::Text("Running...");
+        auto& ps = state.target_state->process_state;
+
+        if(ps->process.GetState() != lldb::eStateStopped) {
+            ImGui::End();
+            return;
+        }
+
+        if(ImGui::Button("Kill")) {
+            state.events.push_back(ChangeDebugStateEvent{ChangeDebugStateEvent::Kill});
+        }
+
+        if(ImGui::Button("Step In")) {
+            state.events.push_back(ChangeDebugStateEvent{ChangeDebugStateEvent::StepIn});
+        }
+
+        ImGui::SameLine();
+
+        if(ImGui::Button("Step Over")) {
+            state.events.push_back(ChangeDebugStateEvent{ChangeDebugStateEvent::StepOver});
+        }
+
+        ImGui::SameLine();
+
+        if(ImGui::Button("Continue")) {
+            state.events.push_back(ChangeDebugStateEvent{ChangeDebugStateEvent::Continue});
+        }
 
         ImGui::End();
     }
