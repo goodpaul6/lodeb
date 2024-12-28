@@ -14,5 +14,7 @@ namespace lodeb {
         State state;
 
         void WindowTargetSettings();
+        void WindowCommandBar();
+        void WindowSourceView();
     };
 }

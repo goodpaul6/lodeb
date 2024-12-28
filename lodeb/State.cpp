@@ -6,6 +6,7 @@
 
 namespace lodeb {
     State::State() : debugger{lldb::SBDebugger::Create()} {
+        debugger.SetAsync(true);
     }
 
     State::~State() {
@@ -14,7 +15,7 @@ namespace lodeb {
 
     void State::ProcessEvents() {
         for(const auto& event : events) {
-            if(auto* load_target = std::get_if<RequestLoadTargetEvent>(&event)) {
+            if(auto* load_target = std::get_if<LoadTargetEvent>(&event)) {
                 target_state = {
                     .target = debugger.CreateTarget(target_settings.exe_path.c_str()),
                 };

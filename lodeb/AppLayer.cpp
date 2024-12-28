@@ -5,13 +5,22 @@
 #include <tinyfiledialogs.h>
 #include <lldb/API/LLDB.h>
 
+#include "ParseCommand.hpp"
+
+namespace {
+    const char* COMMAND_BAR_POPUP_NAME = "Command Bar";
+}
+
 namespace lodeb {
+    using namespace Scaffold;
+    
     void AppLayer::OnUpdate(float) {
         state.ProcessEvents();
     }
 
     void AppLayer::OnRenderUI(float) {
         WindowTargetSettings();
+        WindowCommandBar();
     }
 
     void AppLayer::WindowTargetSettings() {
@@ -47,9 +56,88 @@ namespace lodeb {
         }
 
         if(ImGui::Button("Load Target")) {
-            state.events.push_back(RequestLoadTargetEvent{});
+            state.events.push_back(LoadTargetEvent{});
         }
 
         ImGui::End();
+    }
+
+    void AppLayer::WindowCommandBar() {
+        auto& input = Application::GetInput();
+
+        if(input.GetKeyState(KeyCode::P) == KeyState::Pressed &&
+           (input.IsKeyDown(KeyCode::LeftControl) || 
+            input.IsKeyDown(KeyCode::RightControl) ||
+            input.IsKeyDown(KeyCode::LeftSuper) ||
+            input.IsKeyDown(KeyCode::RightSuper))) {
+            ImGui::OpenPopup(COMMAND_BAR_POPUP_NAME);
+        }
+
+        auto handle_parsed_command = [&](ParsedCommand& parsed) {
+            auto& target_state = state.target_state;
+
+            if(!target_state) {
+                ImGui::Text("No target loaded");
+
+                return;
+            }
+
+            auto* sym_search = std::get_if<LookForSymbolCommand>(&parsed);
+            if(!sym_search) {
+                return;
+            }
+
+            // TODO(Apaar): Handle file search
+            ImGui::BeginChild("##symbols", {300, 300}, ImGuiChildFlags_NavFlattened);
+            
+            for(auto mod_i = 0u; mod_i < target_state->target.GetNumModules(); mod_i++) {
+                auto mod = target_state->target.GetModuleAtIndex(mod_i);
+
+                ImGui::PushID(mod_i);
+
+                for(auto sym_i = 0u; sym_i < mod.GetNumSymbols(); ++sym_i) {
+                    auto sym = mod.GetSymbolAtIndex(sym_i);
+
+                    std::string_view name = sym.GetName();
+
+                    if(name.find(sym_search->text) == std::string_view::npos) {
+                        continue;
+                    }
+
+                    ImGui::PushID(sym_i);
+
+                    ImGui::Selectable(sym.GetName());
+
+                    ImGui::PopID();
+                }
+
+                ImGui::PopID();
+            }
+
+            ImGui::EndChild();
+        };
+
+        if(ImGui::BeginPopup(COMMAND_BAR_POPUP_NAME)) {
+            if(!state.cmd_bar_state) {
+                state.cmd_bar_state.emplace();
+            }
+
+            if(!state.cmd_bar_state->focused_text) {
+                ImGui::SetKeyboardFocusHere();
+                state.cmd_bar_state->focused_text = true;
+            }
+
+            ImGui::InputText("##command_bar_text", &state.cmd_bar_state->text);
+
+            auto parsed = ParseCommand(state.cmd_bar_state->text);
+            handle_parsed_command(parsed);
+
+            ImGui::EndPopup();
+        } else {
+            state.cmd_bar_state.reset();
+        }
+    }
+
+    void AppLayer::WindowSourceView() {
     }
 }
