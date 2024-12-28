@@ -12,6 +12,7 @@ import lldb
 
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
 import pygame
+import pygame.event
 
 import imgui
 import filedialpy
@@ -60,6 +61,10 @@ def win_target_metadata(st: state.State):
         return
 
     md = st.target_metadata.result()
+
+    if st.focus_on_search:
+        imgui.set_keyboard_focus_here()
+        st.focus_on_search = False
 
     changed, st.sym_search_text = imgui.input_text('Search Symbol', st.sym_search_text)
 
@@ -346,6 +351,13 @@ def update(st: state.State, executor: ThreadPoolExecutor):
             st.process.var_state = None
 
 
+def handle_event(e: pygame.event.Event, st: state.State, was_handled_by_imgui: bool):
+    if e.type == pygame.KEYDOWN:
+        # Cmd or Ctrl + P should switch focus to the symbol search
+        if e.key == pygame.K_p and e.mod & (pygame.KMOD_CTRL | pygame.KMOD_META):
+            st.focus_on_search = True
+
+
 def main():
     dbg = lldb.SBDebugger.Create()
 
@@ -379,7 +391,8 @@ def main():
             if event.type == pygame.QUIT:
                 sys.exit(0)
 
-            impl.process_event(event)
+            handled_by_imgui = impl.process_event(event)
+            handle_event(event, st, handled_by_imgui)
 
         update(st, executor)
 

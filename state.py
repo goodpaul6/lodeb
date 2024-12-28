@@ -73,6 +73,8 @@ class State:
     process: Optional[ProcessState] = None
     output: Optional[debugger.ProcessOutput] = None
 
+    focus_on_search: bool = False
+
 
 def create() -> State:
     return State(
