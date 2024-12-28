@@ -4,15 +4,14 @@ int main(int, char**)
 {
     Scaffold::Manifest manifest = {};
 
-    manifest.title = "Scaffold";
+    manifest.title = "Lodeb";
     manifest.initialWidth = 1280;
     manifest.initialHeight = 920;
 
     manifest.dockspaceOverViewport = true;
 
-    manifest.useProfilerLayer = true;
-    manifest.useInputInfoLayer = true;
-    manifest.useDemoLayer = true;
+    manifest.useProfilerLayer = false;
+    manifest.useInputInfoLayer = false;
 
     manifest.swapInterval = 0;
 

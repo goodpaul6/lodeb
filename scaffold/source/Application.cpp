@@ -37,6 +37,7 @@ Scaffold::Application::Application(const Manifest manifest)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, 1);
 
     m_glfwWindow = glfwCreateWindow(manifest.initialWidth, manifest.initialHeight, manifest.title.c_str(), NULL, NULL);
     if (m_glfwWindow == nullptr)
