@@ -172,25 +172,25 @@ namespace lodeb {
             ImGui::OpenPopup(COMMAND_BAR_POPUP_NAME);
         }
 
-        if(ImGui::BeginPopup(COMMAND_BAR_POPUP_NAME)) {
-            if(!state.cmd_bar_state) {
-                state.cmd_bar_state.emplace();
-            }
-
-            if(!state.cmd_bar_state->focused_text) {
-                ImGui::SetKeyboardFocusHere();
-                state.cmd_bar_state->focused_text = true;
-            }
-
-            ImGui::InputText("##command_bar_text", &state.cmd_bar_state->text);
-
-            auto parsed = ParseCommand(state.cmd_bar_state->text);
-            handle_parsed_command(parsed);
-
-            ImGui::EndPopup();
-        } else {
-            state.cmd_bar_state.reset();
+        if(!ImGui::BeginPopup(COMMAND_BAR_POPUP_NAME)) {
+            return;
         }
+
+        if(!state.cmd_bar_state) {
+            state.cmd_bar_state.emplace();
+        }
+
+        if(!state.cmd_bar_state->focused_text) {
+            ImGui::SetKeyboardFocusHere();
+            state.cmd_bar_state->focused_text = true;
+        }
+
+        ImGui::InputText("##command_bar_text", &state.cmd_bar_state->text);
+
+        auto parsed = ParseCommand(state.cmd_bar_state->text);
+        handle_parsed_command(parsed);
+
+        ImGui::EndPopup();
     }
 
     void AppLayer::WindowSourceView() {

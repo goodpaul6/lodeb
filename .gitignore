@@ -1,6 +1,5 @@
 *.swp
 *.pyc
-imgui.ini
 lodeb.json
 build/*
 .DS_Store
