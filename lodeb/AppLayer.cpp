@@ -173,6 +173,7 @@ namespace lodeb {
         }
 
         if(!ImGui::BeginPopup(COMMAND_BAR_POPUP_NAME)) {
+            state.cmd_bar_state.reset();
             return;
         }
 
@@ -216,9 +217,16 @@ namespace lodeb {
 
         std::istringstream ss{source_view_state->text};
 
-        for(std::string line; std::getline(ss, line);) {
+        int line_num = 0;
+        for(std::string line; (line_num += 1), std::getline(ss, line);) {
             ImGui::TextUnformatted(line.c_str());
+
+            if(source_view_state->scroll_to_line == line_num) {
+                ImGui::SetScrollHereY();
+            }
         }
+
+        source_view_state->scroll_to_line.reset();
 
         ImGui::EndChild();
 

@@ -10,6 +10,8 @@
 #include "../builtin/InputInfoLayer.hpp"
 #include "../builtin/ProfilerLayer.hpp"
 
+#include "Roboto.hpp"
+
 #include <iostream>
 #include <type_traits>
 
@@ -64,6 +66,9 @@ Scaffold::Application::Application(const Manifest manifest)
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+    io.Fonts->AddFontFromMemoryCompressedTTF(Roboto_compressed_data, Roboto_compressed_size, 18);
+
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;     // Enable Docking
 
