@@ -17,14 +17,11 @@ namespace {
     const char* COMMAND_BAR_POPUP_NAME = "Command Bar";
     const char* STATE_PATH = "lodeb.txt";
 
-    std::optional<FileLoc> SymLoc(lldb::SBSymbol& sym) {
-        auto addr = sym.GetStartAddress();
-        
-        if(!addr.IsValid()) {
+    std::optional<FileLoc> LineEntryLoc(const lldb::SBLineEntry& le) {
+        if(!le.IsValid()) {
             return std::nullopt;
         }
 
-        auto le = addr.GetLineEntry();
         auto fs = le.GetFileSpec();
 
         char buf[1024];
@@ -35,6 +32,29 @@ namespace {
             .path = buf,
             .line = static_cast<int>(le.GetLine()),
         };
+    }
+
+    std::optional<FileLoc> AddrLoc(lldb::SBAddress& addr) {
+        if(!addr.IsValid()) {
+            return std::nullopt;
+        }
+
+        auto le = addr.GetLineEntry();
+        return LineEntryLoc(le);
+    }
+
+    std::optional<FileLoc> SymLoc(lldb::SBSymbol& sym) {
+        auto addr = sym.GetStartAddress();
+        return AddrLoc(addr);
+    }
+    
+    std::optional<FileLoc> FrameLoc(lldb::SBFrame& frame) {
+        if(!frame.IsValid()) {
+            return std::nullopt;
+        }
+
+        auto le = frame.GetLineEntry();
+        return LineEntryLoc(le);
     }
 
     bool ReadEntireFileInto(const char* path, std::string& into) {
@@ -220,6 +240,24 @@ namespace lodeb {
             return;
         }
 
+        auto get_cur_frame_loc = [&]() -> std::optional<FileLoc> {
+            if(!state.target_state ||
+               !state.target_state->process_state) {
+                return std::nullopt;
+            }
+
+            auto cur_thread = state.target_state->process_state->process.GetSelectedThread();
+            if(!cur_thread.IsValid()) {
+                return std::nullopt;
+            }
+
+            auto cur_frame = cur_thread.GetSelectedFrame();
+
+            return FrameLoc(cur_frame);
+        };
+
+        auto cur_frame_loc = get_cur_frame_loc();
+
         if(!source_view_state->path.empty() &&
             source_view_state->text.empty()) {
             ReadEntireFileInto(source_view_state->path.c_str(), source_view_state->text);            
@@ -236,16 +274,55 @@ namespace lodeb {
 
         std::istringstream ss{source_view_state->text};
 
-        int line_num = 0;
-        for(std::string line; (line_num += 1), std::getline(ss, line);) {
+        FileLoc loc = {
+            .path = source_view_state->path,
+            .line = 0,
+        };
+
+        for(std::string line; (loc.line += 1), std::getline(ss, line);) {
+            ImGui::PushID(loc.line);
+
             line_buf.clear();
-            std::format_to(std::back_inserter(line_buf), "{:5} {}", line_num, line);
+            std::format_to(std::back_inserter(line_buf), "{:5} {}", loc.line, line);
+
+            if(ImGui::InvisibleButton("##gutter", {16, 16})) {
+                state.events.push_back(ToggleBreakpointEvent{loc});
+            }
+
+            ImGui::SameLine();
+
+            bool has_bp = state.target_state && state.target_state->loc_to_breakpoint.contains(loc);
+
+            if(has_bp) {
+                auto* draw_list = ImGui::GetWindowDrawList();
+                auto pos = ImGui::GetItemRectMin();
+                draw_list->AddCircleFilled(
+                    {pos.x + 10, pos.y + 10},
+                    5,
+                    ImGui::GetColorU32(ImVec4{1.0, 0.0, 0.0, 1.0})
+                );
+
+                ImGui::SameLine();
+            }
+
+            bool highlight = cur_frame_loc == loc;
+
+            if(highlight) {
+                ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetColorU32(ImVec4{0.25, 0.5, 1.0, 1.0}));
+            }
+
 
             ImGui::TextUnformatted(line_buf.c_str());
 
-            if(source_view_state->scroll_to_line == line_num) {
+            if(highlight) {
+                ImGui::PopStyleColor();
+            }
+
+            if(source_view_state->scroll_to_line == loc.line) {
                 ImGui::SetScrollHereY();
             }
+
+            ImGui::PopID();
         }
 
         source_view_state->scroll_to_line.reset();

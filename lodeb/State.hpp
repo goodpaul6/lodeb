@@ -6,6 +6,7 @@
 #include <vector>
 #include <format>
 #include <memory>
+#include <unordered_map>
 
 #include <lldb/API/LLDB.h>
 
@@ -13,8 +14,22 @@ namespace lodeb {
     struct FileLoc {
         std::string path;
         int line = 0;
-    };
 
+        bool operator==(const FileLoc&) const = default;
+    };
+}
+
+template <>
+struct std::hash<lodeb::FileLoc> {
+    std::size_t operator()(const lodeb::FileLoc& loc) const noexcept {
+        size_t h1 = std::hash<std::string>{}(loc.path);
+        size_t h2 = std::hash<int>{}(loc.line);
+
+        return h1 ^ (h2 << 1);
+    }
+};
+
+namespace lodeb {
     struct TargetSettings {
         std::string exe_path;
         std::string working_dir;
@@ -27,6 +42,8 @@ namespace lodeb {
 
     struct TargetState {
         lldb::SBTarget target;
+
+        std::unordered_map<FileLoc, lldb::SBBreakpoint> loc_to_breakpoint;
 
         std::optional<ProcessState> process_state;
     };
@@ -49,11 +66,15 @@ namespace lodeb {
         FileLoc loc;
     };
     struct StartProcessEvent {};
+    struct ToggleBreakpointEvent {
+        FileLoc loc;
+    };
 
     using StateEvent = std::variant<
         LoadTargetEvent, 
         ViewSourceEvent,
-        StartProcessEvent
+        StartProcessEvent,
+        ToggleBreakpointEvent
     >;
 
     struct State {

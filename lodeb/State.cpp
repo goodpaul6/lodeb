@@ -89,6 +89,15 @@ namespace lodeb {
                 if(state == lldb::eStateStopped) {
                     LogInfo("Process stopped");
 
+                    // Select the thread which was stopped due to breakpoint
+                    for(auto i = 0u; i < ps.process.GetNumThreads(); ++i) {
+                        auto t = ps.process.GetThreadAtIndex(i);
+
+                        if(t.GetStopReason() == lldb::eStopReasonBreakpoint) {
+                            ps.process.SetSelectedThread(t);
+                            break;
+                        }
+                    }
                 } else if(state == lldb::eStateExited || state == lldb::eStateDetached || state == lldb::eStateUnloaded) {
                     LogInfo("Process exited");
 
@@ -138,7 +147,7 @@ namespace lodeb {
                         .scroll_to_line = view_source->loc.line,
                     };
                 }
-            } else if (auto* start_process = std::get_if<StartProcessEvent>(&event)) {
+            } else if(auto* start_process = std::get_if<StartProcessEvent>(&event)) {
                 assert(target_state);
                 process_output.clear();
 
@@ -164,6 +173,26 @@ namespace lodeb {
                     .listener = std::move(listener),
                     .process = std::move(process),
                 };
+            } else if(auto* toggle_bp = std::get_if<ToggleBreakpointEvent>(&event)) {
+                assert(target_state);
+
+                auto found = target_state->loc_to_breakpoint.find(toggle_bp->loc);
+
+                if(found == target_state->loc_to_breakpoint.end()) {
+                    LogInfo("Adding breakpoint to {}", toggle_bp->loc);
+
+                    target_state->loc_to_breakpoint[toggle_bp->loc] = target_state->target.BreakpointCreateByLocation(
+                        toggle_bp->loc.path.c_str(),
+                        toggle_bp->loc.line
+                    );
+                    continue;
+                }
+
+                target_state->target.BreakpointDelete(found->second.GetID());
+
+                LogInfo("Removing breakpoint from {}", toggle_bp->loc);
+
+                target_state->loc_to_breakpoint.erase(found);
             }
         }
 
