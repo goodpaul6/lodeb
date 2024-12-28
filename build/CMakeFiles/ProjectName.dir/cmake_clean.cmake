@@ -1,0 +1,41 @@
+file(REMOVE_RECURSE
+  "/Users/apaar/projects/lodeb/cpp/bin/ProjectName"
+  "/Users/apaar/projects/lodeb/cpp/bin/ProjectName.pdb"
+  "CMakeFiles/ProjectName.dir/main.cpp.o"
+  "CMakeFiles/ProjectName.dir/main.cpp.o.d"
+  "CMakeFiles/ProjectName.dir/scaffold/builtin/DemoLayer.cpp.o"
+  "CMakeFiles/ProjectName.dir/scaffold/builtin/DemoLayer.cpp.o.d"
+  "CMakeFiles/ProjectName.dir/scaffold/builtin/InputInfoLayer.cpp.o"
+  "CMakeFiles/ProjectName.dir/scaffold/builtin/InputInfoLayer.cpp.o.d"
+  "CMakeFiles/ProjectName.dir/scaffold/builtin/ProfilerLayer.cpp.o"
+  "CMakeFiles/ProjectName.dir/scaffold/builtin/ProfilerLayer.cpp.o.d"
+  "CMakeFiles/ProjectName.dir/scaffold/source/Application.cpp.o"
+  "CMakeFiles/ProjectName.dir/scaffold/source/Application.cpp.o.d"
+  "CMakeFiles/ProjectName.dir/scaffold/source/Input.cpp.o"
+  "CMakeFiles/ProjectName.dir/scaffold/source/Input.cpp.o.d"
+  "CMakeFiles/ProjectName.dir/scaffold/source/Marker.cpp.o"
+  "CMakeFiles/ProjectName.dir/scaffold/source/Marker.cpp.o.d"
+  "CMakeFiles/ProjectName.dir/scaffold/source/Profiler.cpp.o"
+  "CMakeFiles/ProjectName.dir/scaffold/source/Profiler.cpp.o.d"
+  "CMakeFiles/ProjectName.dir/vendor/glad/src/gl.c.o"
+  "CMakeFiles/ProjectName.dir/vendor/glad/src/gl.c.o.d"
+  "CMakeFiles/ProjectName.dir/vendor/imgui/imgui.cpp.o"
+  "CMakeFiles/ProjectName.dir/vendor/imgui/imgui.cpp.o.d"
+  "CMakeFiles/ProjectName.dir/vendor/imgui/imgui_demo.cpp.o"
+  "CMakeFiles/ProjectName.dir/vendor/imgui/imgui_demo.cpp.o.d"
+  "CMakeFiles/ProjectName.dir/vendor/imgui/imgui_draw.cpp.o"
+  "CMakeFiles/ProjectName.dir/vendor/imgui/imgui_draw.cpp.o.d"
+  "CMakeFiles/ProjectName.dir/vendor/imgui/imgui_impl_glfw.cpp.o"
+  "CMakeFiles/ProjectName.dir/vendor/imgui/imgui_impl_glfw.cpp.o.d"
+  "CMakeFiles/ProjectName.dir/vendor/imgui/imgui_impl_opengl3.cpp.o"
+  "CMakeFiles/ProjectName.dir/vendor/imgui/imgui_impl_opengl3.cpp.o.d"
+  "CMakeFiles/ProjectName.dir/vendor/imgui/imgui_tables.cpp.o"
+  "CMakeFiles/ProjectName.dir/vendor/imgui/imgui_tables.cpp.o.d"
+  "CMakeFiles/ProjectName.dir/vendor/imgui/imgui_widgets.cpp.o"
+  "CMakeFiles/ProjectName.dir/vendor/imgui/imgui_widgets.cpp.o.d"
+)
+
+# Per-language clean rules from dependency scanning.
+foreach(lang C CXX)
+  include(CMakeFiles/ProjectName.dir/cmake_clean_${lang}.cmake OPTIONAL)
+endforeach()
