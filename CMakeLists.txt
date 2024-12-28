@@ -17,15 +17,15 @@ file(GLOB scaffold_sources CONFIGURE_DEPENDS
 )
 
 # - project sources
-#file(GLOB project_sources CONFIGURE_DEPENDS
-#${CMAKE_SOURCE_DIR}/path/to/sources/*.cpp
-#)
+file(GLOB project_sources CONFIGURE_DEPENDS
+    ${CMAKE_SOURCE_DIR}/lodeb/*.cpp
+)
 
 # register sources
 add_executable(${CMAKE_PROJECT_NAME} 
     main.cpp 
     ${scaffold_sources}
-#    ${project_sources}
+    ${project_sources}
 )
 
 # exposing includes
