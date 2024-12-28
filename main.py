@@ -68,7 +68,11 @@ def win_target_metadata(st: state.State):
 
     changed, st.sym_search_text = imgui.input_text('Search Symbol', st.sym_search_text)
 
+    nav_to_tree = imgui.is_item_active() and imgui.is_key_pressed(imgui.KEY_DOWN_ARROW)
+
     imgui.begin_child('Files')
+
+    first_item = True
 
     for path, f in md.path_to_files.items():
         relevant_syms = [sym for sym in f.symbols if not st.sym_search_text or st.sym_search_text in sym.name]
@@ -76,9 +80,14 @@ def win_target_metadata(st: state.State):
         if not relevant_syms:
             continue
 
-        if imgui.tree_node(path):
+        if imgui.tree_node(path, imgui.TREE_NODE_DEFAULT_OPEN if len(relevant_syms) <= 10 else 0):
             for sym in relevant_syms:
+                if first_item and nav_to_tree:
+                    imgui.set_keyboard_focus_here()
+                    first_item = False
+
                 clicked, _ = imgui.selectable(sym.name, False)
+
                 if clicked:
                     st.loc_to_open = state.sym_loc(sym)
 
@@ -349,6 +358,9 @@ def update(st: state.State, executor: ThreadPoolExecutor):
             st.process.highlight_loc = None
             st.process.selected_frame = None
             st.process.var_state = None
+            st.process.should_step_in = False
+            st.process.should_step_over = False
+            st.process.should_continue = False
 
 
 def handle_event(e: pygame.event.Event, st: state.State, was_handled_by_imgui: bool):
@@ -356,6 +368,12 @@ def handle_event(e: pygame.event.Event, st: state.State, was_handled_by_imgui: b
         # Cmd or Ctrl + P should switch focus to the symbol search
         if e.key == pygame.K_p and e.mod & (pygame.KMOD_CTRL | pygame.KMOD_META):
             st.focus_on_search = True
+        elif e.key == pygame.K_DOWN:
+            if st.process:
+                st.process.should_step_over = True
+        elif e.key == pygame.K_RIGHT:
+            if st.process:
+                st.process.should_step_in = True
 
 
 def main():

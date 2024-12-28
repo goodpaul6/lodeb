@@ -78,12 +78,26 @@ def launch_process(target: lldb.SBTarget, params: ExeParams, output: ProcessOutp
 
     return process
 
+def _var_name(value: lldb.SBValue) -> str:
+    if not hasattr(value, 'cached_name'):
+        # Vars with the same name will be declared across lines in the same frame, so we gotta do this
+        id_ = value.GetAddress()
+        setattr(value, 'cached_name', f'{value.name}:{id_}')
+
+    return value.cached_name
+
+def _get_vars(frame: lldb.SBFrame) -> list[lldb.SBValue]:
+    if not hasattr(frame, 'cached_vars'):
+        setattr(frame, 'cached_vars', list(frame.locals) + list(frame.arguments))
+
+    return frame.cached_vars
+
 def get_frame_var_names(frame: lldb.SBFrame) -> list[str]:
     if not hasattr(frame, 'var_names'):
         names = []
 
-        for var in itertools.chain(frame.locals, frame.arguments):
-            names.append(var.name)
+        for var in _get_vars(frame):
+            names.append(_var_name(var))
 
         setattr(frame, 'var_names', names)
 
@@ -92,8 +106,6 @@ def get_frame_var_names(frame: lldb.SBFrame) -> list[str]:
 def get_frame_var_values(frame: lldb.SBFrame, names: set[str]) -> dict[str, str]:
     if not hasattr(frame, 'var_name_to_value'):
         setattr(frame, 'var_name_to_value', {})
-        setattr(frame, 'cached_locals', frame.locals)
-        setattr(frame, 'cached_args', frame.arguments)
 
     name_to_value = {}
 
@@ -101,11 +113,12 @@ def get_frame_var_values(frame: lldb.SBFrame, names: set[str]) -> dict[str, str]
         if name in frame.var_name_to_value:
             name_to_value[name] = frame.var_name_to_value[name]
 
-    for var in itertools.chain(frame.cached_locals, frame.cached_args):
-        name = var.name
+    for var in _get_vars(frame):
+        name = _var_name(var)
 
         if name in names and name not in name_to_value:
             var_str = str(var)
+  
             frame.var_name_to_value[name] = var_str
             name_to_value[name] = var_str
 
