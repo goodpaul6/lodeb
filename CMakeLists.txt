@@ -16,6 +16,7 @@ file(GLOB scaffold_sources CONFIGURE_DEPENDS
     ${CMAKE_SOURCE_DIR}/vendor/imgui/*.cpp
     ${CMAKE_SOURCE_DIR}/vendor/glad/src/gl.c
     ${CMAKE_SOURCE_DIR}/vendor/tinygltf/tinygltf_impl.cpp
+    ${CMAKE_SOURCE_DIR}/vendor/tinyfiledialogs/*.cpp
 )
 
 # - project sources
@@ -47,6 +48,8 @@ find_library(LLDB_LIBRARY
         # TODO(Apaar): Add windows paths
 )
 
+target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
+
 # exposing includes
 # - scaffold & vendor includes
 target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
@@ -55,6 +58,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
     ${CMAKE_SOURCE_DIR}/vendor/glad/include
     ${CMAKE_SOURCE_DIR}/vendor/imgui
     ${CMAKE_SOURCE_DIR}/vendor/glm
+    ${CMAKE_SOURCE_DIR}/vendor/tinyfiledialogs
     ${LLVM_INCLUDE_DIR}
 )
 

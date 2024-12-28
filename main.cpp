@@ -21,7 +21,7 @@ int main(int, char**)
 
     manifest.swapInterval = 0;
 
-    Scaffold::Application app(manifest);
+    Scaffold::Application app{manifest};
 
     app.CreateObject<lodeb::AppLayer>("App");
 
