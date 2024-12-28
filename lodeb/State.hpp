@@ -111,6 +111,9 @@ namespace lodeb {
         void Store(const char* path);
 
         void Update();
+
+        // SelecteadThread->SelectedFrame -> FileLoc
+        std::optional<FileLoc> GetCurFrameLoc();
     };
 }
 

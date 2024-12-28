@@ -5,6 +5,7 @@
 #include <tinyfiledialogs.h>
 #include <lldb/API/LLDB.h>
 #include <sstream>
+#include <unordered_set>
 
 #include <stdio.h>
 
@@ -53,6 +54,7 @@ namespace lodeb {
         WindowSourceView();
         WindowProcessOutput();
         WindowDebug();
+        WindowLocals();
     }
 
     void AppLayer::WindowTargetSettings() {
@@ -201,24 +203,7 @@ namespace lodeb {
             return;
         }
 
-        auto get_cur_frame_loc = [&]() -> std::optional<FileLoc> {
-            if(!state.target_state ||
-               !state.target_state->process_state &&
-               state.target_state->process_state->process.GetState() != lldb::eStateStopped) {
-                return std::nullopt;
-            }
-
-            auto cur_thread = state.target_state->process_state->process.GetSelectedThread();
-            if(!cur_thread.IsValid()) {
-                return std::nullopt;
-            }
-
-            auto cur_frame = cur_thread.GetSelectedFrame();
-
-            return FrameLoc(cur_frame);
-        };
-
-        auto cur_frame_loc = get_cur_frame_loc();
+        auto cur_frame_loc = state.GetCurFrameLoc();
 
         if(!source_view_state->path.empty() &&
             source_view_state->text.empty()) {
@@ -247,7 +232,7 @@ namespace lodeb {
             line_buf.clear();
             std::format_to(std::back_inserter(line_buf), "{:5} {}", loc.line, line);
 
-            if(ImGui::InvisibleButton("##gutter", {16, 16})) {
+            if(ImGui::InvisibleButton("##gutter", {20, 20})) {
                 state.events.push_back(ToggleBreakpointEvent{loc});
             }
 
@@ -350,6 +335,120 @@ namespace lodeb {
         if(ImGui::Button("Continue")) {
             state.events.push_back(ChangeDebugStateEvent{ChangeDebugStateEvent::Continue});
         }
+
+        ImGui::End();
+    }
+
+    void AppLayer::WindowLocals() {
+        ImGui::Begin("Locals");
+
+        if(!state.target_state) {
+            ImGui::Text("No target loaded");
+
+            ImGui::End();
+            return;
+        }
+
+        if(!state.target_state->process_state) {
+            ImGui::Text("Process is not running");
+            
+            ImGui::End();
+            return;
+        }
+
+        auto& ps = *state.target_state->process_state;
+
+        if(ps.process.GetState() != lldb::eStateStopped) {
+            ImGui::Text("Running...");
+            
+            ImGui::End();
+            return; 
+        }
+
+        auto frame = ps.process.GetSelectedThread().GetSelectedFrame();
+
+        lldb::SBVariablesOptions opts;
+        
+        opts.SetIncludeLocals(true);
+        opts.SetIncludeArguments(true);
+        opts.SetInScopeOnly(true);
+
+        // HACK(Apaar): Caching this
+        static uint32_t last_frame_id = (uint32_t)-1;
+        static lldb::addr_t last_frame_pc = (lldb::addr_t)-1;
+
+        static std::vector<std::string> var_names;
+        static std::unordered_map<std::string, lldb::SBValue> name_to_value;
+        static std::unordered_map<std::string, std::string> name_to_desc;
+
+        if(frame.GetFrameID() != last_frame_id ||
+           frame.GetPC() != last_frame_pc) {
+            auto vars = frame.GetVariables(opts); 
+
+            last_frame_id = frame.GetFrameID();
+            last_frame_pc = frame.GetPC();
+
+            LogDebug("Getting variables again");
+
+            var_names.clear();
+            name_to_value.clear();
+            name_to_desc.clear();
+
+            for(auto i = 0u; i < vars.GetSize(); ++i) {
+                auto var = vars.GetValueAtIndex(i);
+                auto addr = var.GetLoadAddress();
+
+                if(addr == (lldb::addr_t)-1) {
+                    continue;
+                }
+
+                auto name = std::format("{} at {:#010x}", var.GetName(), var.GetLoadAddress());
+
+                var_names.emplace_back(name);
+                name_to_value[name] = var;
+            }
+        }
+
+        static lldb::SBStream stream;
+
+        auto get_name_desc = [&](const std::string& var_name) -> const char* {
+            auto found_desc = name_to_desc.find(var_name);
+
+            if(found_desc != name_to_desc.end()) {
+                return found_desc->second.c_str();
+            }
+
+            auto found_value = name_to_value.find(var_name);
+            
+            if(found_value == name_to_value.end()) {
+                return nullptr;
+            }
+
+            stream.Clear();
+            found_value->second.GetDescription(stream);
+
+            std::string& s = name_to_desc[var_name];
+            s = stream.GetData();
+
+            return s.c_str();
+        };
+        
+
+        ImGui::BeginChild("##vars", {-1, -1}, ImGuiChildFlags_Border);
+
+        for(const auto& var_name : var_names) {
+            if(ImGui::TreeNode(var_name.c_str())) {
+                auto value = get_name_desc(var_name);
+
+                if(value) {
+                    ImGui::TextUnformatted(value);
+                }
+
+                ImGui::TreePop();
+            }
+        }
+
+        ImGui::EndChild();
 
         ImGui::End();
     }

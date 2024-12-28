@@ -226,5 +226,23 @@ namespace lodeb {
 
         events = std::move(new_events);
     }
+
+    std::optional<FileLoc> State::GetCurFrameLoc() {  
+        if(!target_state ||
+           !target_state->process_state ||
+           target_state->process_state->process.GetState() != lldb::eStateStopped) {
+            return std::nullopt;
+        }
+
+        auto cur_thread = target_state->process_state->process.GetSelectedThread();
+        if(!cur_thread.IsValid()) {
+            return std::nullopt;
+        }
+
+        auto cur_frame = cur_thread.GetSelectedFrame();
+
+        return FrameLoc(cur_frame);
+    }
 }
+
 

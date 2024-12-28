@@ -20,5 +20,6 @@ namespace lodeb {
         void WindowSourceView();
         void WindowProcessOutput();
         void WindowDebug();
+        void WindowLocals();
     };
 }
