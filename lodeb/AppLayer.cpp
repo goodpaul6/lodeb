@@ -209,7 +209,7 @@ namespace lodeb {
 
         ImGui::Begin("Source View");
 
-        ImGui::Text("Path: %s", source_view_state->path.c_str());
+        ImGui::TextUnformatted(source_view_state->path.c_str());
 
         ImGui::BeginChild("##text", {-1, -1});
 
@@ -219,7 +219,10 @@ namespace lodeb {
 
         int line_num = 0;
         for(std::string line; (line_num += 1), std::getline(ss, line);) {
-            ImGui::TextUnformatted(line.c_str());
+            line_buf.clear();
+            std::format_to(std::back_inserter(line_buf), "{:5} {}", line_num, line);
+
+            ImGui::TextUnformatted(line_buf.c_str());
 
             if(source_view_state->scroll_to_line == line_num) {
                 ImGui::SetScrollHereY();
