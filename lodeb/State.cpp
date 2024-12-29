@@ -12,6 +12,7 @@
 namespace lodeb {
     State::State() : debugger{lldb::SBDebugger::Create()} {
         debugger.SetAsync(true);
+        debugger.SetUseColor(false);
     }
 
     State::~State() {

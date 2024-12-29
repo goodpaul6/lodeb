@@ -304,7 +304,7 @@ namespace lodeb {
     void AppLayer::WindowProcessOutput() {
         ImGui::Begin("Process Output");
 
-        ImGui::BeginChild("##text", {-1, -1}, ImGuiChildFlags_Border);
+        ImGui::BeginChild("##text", {-1, -1}, ImGuiChildFlags_Border, ImGuiWindowFlags_HorizontalScrollbar);
 
         ImGui::TextUnformatted(state.process_output.c_str());
 
@@ -462,7 +462,7 @@ namespace lodeb {
         };
         
 
-        ImGui::BeginChild("##vars", {-1, -1}, ImGuiChildFlags_Border);
+        ImGui::BeginChild("##vars", {-1, -1}, ImGuiChildFlags_Border, ImGuiWindowFlags_HorizontalScrollbar);
 
         for(const auto& var_name : var_names) {
             if(ImGui::TreeNode(var_name.c_str())) {
@@ -503,7 +503,7 @@ namespace lodeb {
         auto thread = ps.process.GetSelectedThread();
         auto selected_frame = thread.GetSelectedFrame();
 
-        ImGui::BeginChild("##frames");
+        ImGui::BeginChild("##frames", {-1, -1}, ImGuiChildFlags_Border, ImGuiWindowFlags_HorizontalScrollbar);
 
         lldb::SBStream stream;
 
@@ -515,7 +515,7 @@ namespace lodeb {
 
             ImGui::PushID(i);
 
-            if(ImGui::Selectable(stream.GetData())) {
+            if(ImGui::Selectable(stream.GetData(), frame.GetFrameID() == selected_frame.GetFrameID())) {
                 state.events.push_back(SetSelectedFrameEvent{i});
             }
 
