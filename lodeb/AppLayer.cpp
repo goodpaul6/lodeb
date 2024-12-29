@@ -486,9 +486,13 @@ namespace lodeb {
             stream.Clear();
             frame.GetDescription(stream);
 
+            ImGui::PushID(i);
+
             if(ImGui::Selectable(stream.GetData())) {
                 state.events.push_back(SetSelectedFrameEvent{i});
             }
+
+            ImGui::PopID();
         }
 
         ImGui::EndChild();

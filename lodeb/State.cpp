@@ -84,6 +84,23 @@ namespace lodeb {
 
             auto& ps = *target_state->process_state;
 
+            // Poll the output
+            char buf[2048] = {0};
+
+            size_t n = ps.process.GetSTDOUT(buf, sizeof(buf) - 1);
+            if(n >= 0) {
+                buf[n] = '\0';
+            }
+
+            process_output += buf;
+
+            n = ps.process.GetSTDERR(buf, sizeof(buf) - 1);
+            if(n >= 0) {
+                buf[n] = '\0';
+            }
+
+            process_output += buf;
+
             // Listen for process events
             lldb::SBEvent process_event;
 
@@ -116,25 +133,7 @@ namespace lodeb {
                     target_state->process_state.reset();
                     return;
                 }
-            }
-
-            
-            // Poll the output
-            char buf[2048] = {0};
-
-            size_t n = ps.process.GetSTDOUT(buf, sizeof(buf) - 1);
-            if(n >= 0) {
-                buf[n] = '\0';
-            }
-
-            process_output += buf;
-
-            n = ps.process.GetSTDERR(buf, sizeof(buf) - 1);
-            if(n >= 0) {
-                buf[n] = '\0';
-            }
-
-            process_output += buf;
+            }     
         };
 
         handle_process();
