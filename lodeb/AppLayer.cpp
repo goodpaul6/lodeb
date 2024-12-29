@@ -112,44 +112,44 @@ namespace lodeb {
                 return;
             }
 
+            auto& ts = *target_state;
+
+            if(!ts.sym_loc_cache) {
+                if(ts.sym_loc_cache_future.wait_for(std::chrono::seconds::zero()) == std::future_status::ready) {
+                    // This can _only be called once hence us wrapping this in the !ts.sym_loc_cache if
+                    ts.sym_loc_cache = ts.sym_loc_cache_future.get();
+                }
+
+                ImGui::Text("Loading symbols...");
+                return;
+            }
+
             // TODO(Apaar): Handle file search
             ImGui::BeginChild("##symbols", {400, 300}, ImGuiChildFlags_NavFlattened);
-            
-            for(auto mod_i = 0u; mod_i < target_state->target.GetNumModules(); mod_i++) {
-                auto mod = target_state->target.GetModuleAtIndex(mod_i);
 
-                ImGui::PushID(mod_i);
+            // ImGui doesn't handle std::string_view so we put match names in here
+            std::string name_buf;
 
-                for(auto sym_i = 0u; sym_i < mod.GetNumSymbols(); ++sym_i) {
-                    auto sym = mod.GetSymbolAtIndex(sym_i);
+            size_t i = 0;
 
-                    std::string_view name = sym.GetName();
+            ts.sym_loc_cache->ForEachMatch(sym_search->text, [&](const auto& match) {
+                ImGui::PushID(i);
 
-                    if(name.find(sym_search->text) == std::string_view::npos) {
-                        continue;
-                    }
+                name_buf = match.name;
 
-                    ImGui::PushID(sym_i);
+                if(ImGui::Selectable(name_buf.c_str())) {
+                    ViewSourceEvent event{*match.loc};
 
-                    if(ImGui::Selectable(sym.GetName())) {
-                        auto loc = SymLoc(sym);
+                    LogInfo("Pushing ViewSourceEvent {}", *match.loc);
 
-                        if(loc) {
-                            ViewSourceEvent event{*loc};
+                    state.events.push_back(std::move(event));
 
-                            LogInfo("Pushing ViewSourceEvent {}", *loc);
-
-                            state.events.push_back(std::move(event));
-                        }
-
-                        ImGui::CloseCurrentPopup();
-                    }
-
-                    ImGui::PopID();
+                    ImGui::CloseCurrentPopup();
                 }
 
                 ImGui::PopID();
-            }
+                i += 1;
+            });
 
             ImGui::EndChild();
         };

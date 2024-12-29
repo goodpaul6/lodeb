@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <cassert>
+#include <future>
 
 #include <lldb/API/LLDB.h>
 
@@ -145,6 +146,27 @@ namespace lodeb {
                 };
                 
                 LogInfo("Created target {}", target_settings.exe_path);
+
+                LogDebug("Kicking off task to load symbols into cache...");
+
+                // NOTE(Apaar): It is _crucial_ that we're referring to target_state
+                // because it will live long enough for this async task to complete.
+                // 
+                // We can't just store it on the stack here (unless we copy it 
+                // into the lambda I guess).
+                target_state->sym_loc_cache_future = std::async(std::launch::async, [&]() {
+                    SymbolLocCache cache;
+
+                    LogDebug("Starting to load symbols from target...");
+
+                    // HACK(Apaar): This could _technically_ modify target from a different thread.
+                    // Should look into whether we can make this receive a const target.
+                    cache.Load(target_state->target);
+
+                    LogDebug("Loaded symbols from target");
+
+                    return cache;
+                });
             } else if(auto* view_source = std::get_if<ViewSourceEvent>(&event)) {
                 LogDebug("View source event {}", view_source->loc);
 

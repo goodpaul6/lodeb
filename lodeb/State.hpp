@@ -7,27 +7,12 @@
 #include <format>
 #include <memory>
 #include <unordered_map>
+#include <future>
 
 #include <lldb/API/LLDB.h>
 
-namespace lodeb {
-    struct FileLoc {
-        std::string path;
-        int line = 0;
-
-        bool operator==(const FileLoc&) const = default;
-    };
-}
-
-template <>
-struct std::hash<lodeb::FileLoc> {
-    std::size_t operator()(const lodeb::FileLoc& loc) const noexcept {
-        size_t h1 = std::hash<std::string>{}(loc.path);
-        size_t h2 = std::hash<int>{}(loc.line);
-
-        return h1 ^ (h2 << 1);
-    }
-};
+#include "FileLoc.hpp"
+#include "SymbolLocCache.hpp"
 
 namespace lodeb {
     struct TargetSettings {
@@ -42,6 +27,11 @@ namespace lodeb {
 
     struct TargetState {
         lldb::SBTarget target;
+
+        // We need to retain this future so that we can grab its
+        // value when we're done.
+        std::future<SymbolLocCache> sym_loc_cache_future;
+        std::optional<SymbolLocCache> sym_loc_cache;
 
         std::unordered_map<FileLoc, lldb::SBBreakpoint> loc_to_breakpoint;
 
