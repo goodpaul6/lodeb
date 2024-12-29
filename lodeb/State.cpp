@@ -137,15 +137,22 @@ namespace lodeb {
             }     
         };
 
-        handle_process();
+        // We handle asynchronously loaded resources first thing
+        if(target_state) {
+            auto& ts = *target_state;
 
-        for(const auto& event : events) {
-            if(auto* load_target = std::get_if<LoadTargetEvent>(&event)) {
-                target_state = {
-                    .target = debugger.CreateTarget(target_settings.exe_path.c_str()),
-                };
-                
-                LogInfo("Created target {}", target_settings.exe_path);
+            if(!ts.sym_loc_cache) {
+                if(ts.sym_loc_cache_future.wait_for(std::chrono::seconds::zero()) == std::future_status::ready) {
+                    // This can _only be called once hence us wrapping this in the !ts.sym_loc_cache if
+                    ts.sym_loc_cache = ts.sym_loc_cache_future.get();
+                }
+            }
+        } else if(target_state_future) {
+            if(target_state_future->wait_for(std::chrono::seconds::zero()) == std::future_status::ready) {
+                target_state = target_state_future->get();
+
+                // No longer valid
+                target_state_future.reset();
 
                 LogDebug("Kicking off task to load symbols into cache...");
 
@@ -166,6 +173,24 @@ namespace lodeb {
                     LogDebug("Loaded symbols from target");
 
                     return cache;
+                });
+            }
+        }
+
+        handle_process();
+
+        for(const auto& event : events) {
+            if(auto* load_target = std::get_if<LoadTargetEvent>(&event)) {
+                LogDebug("Kicking off task to load target {}", target_settings.exe_path);
+                
+                target_state_future = std::async(std::launch::async, [&, exe_path = target_settings.exe_path]() {
+                    TargetState ts = {
+                        .target = debugger.CreateTarget(exe_path.c_str()),
+                    };
+
+                    LogInfo("Created target {}", target_settings.exe_path);
+
+                    return ts;
                 });
             } else if(auto* view_source = std::get_if<ViewSourceEvent>(&event)) {
                 LogDebug("View source event {}", view_source->loc);

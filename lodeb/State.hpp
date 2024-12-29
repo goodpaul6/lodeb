@@ -93,6 +93,8 @@ namespace lodeb {
 
         std::optional<CommandBarState> cmd_bar_state;
         std::optional<SourceViewState> source_view_state;
+
+        std::optional<std::future<TargetState>> target_state_future;
         std::optional<TargetState> target_state;
 
         // This is retained at the top level so that we have it

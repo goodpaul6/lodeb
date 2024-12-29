@@ -115,11 +115,6 @@ namespace lodeb {
             auto& ts = *target_state;
 
             if(!ts.sym_loc_cache) {
-                if(ts.sym_loc_cache_future.wait_for(std::chrono::seconds::zero()) == std::future_status::ready) {
-                    // This can _only be called once hence us wrapping this in the !ts.sym_loc_cache if
-                    ts.sym_loc_cache = ts.sym_loc_cache_future.get();
-                }
-
                 ImGui::Text("Loading symbols...");
                 return;
             }
@@ -139,8 +134,6 @@ namespace lodeb {
 
                 if(ImGui::Selectable(name_buf.c_str())) {
                     ViewSourceEvent event{*match.loc};
-
-                    LogInfo("Pushing ViewSourceEvent {}", *match.loc);
 
                     state.events.push_back(std::move(event));
 
