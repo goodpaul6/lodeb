@@ -12,6 +12,7 @@
 - [ ] Add keybindings for starting, stepping, continuing, and killing a process
 - [ ] Add window to select threads
 - [ ] Make source view a read-only text editor
+- [x] Add limit to `ForEachMatch`
 - [x] Load target asynchronously for faster startup
 - [x] Add horizontal scroll bars to process output, stack frames, and locals
 - [x] Update format string for frames so it looks less ugly

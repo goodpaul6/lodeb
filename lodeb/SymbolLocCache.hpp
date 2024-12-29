@@ -36,7 +36,7 @@ namespace lodeb {
         void Load(lldb::SBTarget& target);
 
         template <typename Fn>
-        void ForEachMatch(std::string_view search, Fn&& fn) {
+        void ForEachMatch(std::string_view search, Fn&& fn, size_t limit) {
             if(locs.empty()) {
                 return;
             }
@@ -47,9 +47,16 @@ namespace lodeb {
                     .loc = &loc.loc,
                 };
             };
+
+            size_t count = 0;
             
             if(search.empty()) {
                 for(auto& loc: locs) {
+                    count += 1;
+                    if(count > limit) {
+                        break;
+                    }
+
                     fn(loc_to_match(loc));
                 }
 
@@ -57,6 +64,11 @@ namespace lodeb {
             }
 
             for(size_t pos = 0; (pos = names.find(search, pos)), pos != std::string::npos; pos += 1) { 
+                count += 1;
+                if(count > limit) {
+                    break;
+                }
+
                 size_t lo = 0;
                 auto hi = locs.size() - 1;
 

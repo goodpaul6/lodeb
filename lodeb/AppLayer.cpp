@@ -142,7 +142,7 @@ namespace lodeb {
 
                 ImGui::PopID();
                 i += 1;
-            });
+            }, 100);
 
             ImGui::EndChild();
         };
