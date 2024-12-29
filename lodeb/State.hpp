@@ -81,12 +81,17 @@ namespace lodeb {
         Kind kind = Kill;
     };
 
+    struct SetSelectedFrameEvent {
+        uint32_t idx = -1;
+    };
+
     using StateEvent = std::variant<
         LoadTargetEvent, 
         ViewSourceEvent,
         StartProcessEvent,
         ToggleBreakpointEvent,
-        ChangeDebugStateEvent
+        ChangeDebugStateEvent,
+        SetSelectedFrameEvent
     >;
 
     struct State {

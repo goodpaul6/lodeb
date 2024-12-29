@@ -55,6 +55,7 @@ namespace lodeb {
         WindowProcessOutput();
         WindowDebug();
         WindowLocals();
+        WindowFrames();
     }
 
     void AppLayer::WindowTargetSettings() {
@@ -450,6 +451,47 @@ namespace lodeb {
 
         ImGui::EndChild();
 
+        ImGui::End();
+    }
+
+    void AppLayer::WindowFrames() {
+        ImGui::Begin("Stack Frames");
+
+        if(!state.target_state) {
+            ImGui::Text("No target loaded");
+
+            ImGui::End();
+            return;
+        }
+
+        if(!state.target_state->process_state) {
+            ImGui::Text("Process is not running");
+            
+            ImGui::End();
+            return;
+        }
+
+        auto& ps = *state.target_state->process_state;
+
+        auto thread = ps.process.GetSelectedThread();
+        auto selected_frame = thread.GetSelectedFrame();
+
+        ImGui::BeginChild("##frames");
+
+        lldb::SBStream stream;
+
+        for(auto i = 0u; i < thread.GetNumFrames(); ++i) {
+            auto frame = thread.GetFrameAtIndex(i);
+
+            stream.Clear();
+            frame.GetDescription(stream);
+
+            if(ImGui::Selectable(stream.GetData())) {
+                state.events.push_back(SetSelectedFrameEvent{i});
+            }
+        }
+
+        ImGui::EndChild();
         ImGui::End();
     }
 }

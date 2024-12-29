@@ -189,7 +189,7 @@ namespace lodeb {
                 auto found = target_state->loc_to_breakpoint.find(toggle_bp->loc);
 
                 if(found == target_state->loc_to_breakpoint.end()) {
-                    LogInfo("Adding breakpoint to {}", toggle_bp->loc);
+                    LogDebug("Adding breakpoint to {}", toggle_bp->loc);
 
                     target_state->loc_to_breakpoint[toggle_bp->loc] = target_state->target.BreakpointCreateByLocation(
                         toggle_bp->loc.path.c_str(),
@@ -200,14 +200,14 @@ namespace lodeb {
 
                 target_state->target.BreakpointDelete(found->second.GetID());
 
-                LogInfo("Removing breakpoint from {}", toggle_bp->loc);
+                LogDebug("Removing breakpoint from {}", toggle_bp->loc);
 
                 target_state->loc_to_breakpoint.erase(found);
             } else if (auto* change_state = std::get_if<ChangeDebugStateEvent>(&event)) {
                 assert(target_state);
                 assert(target_state->process_state);
 
-                LogInfo("Handling change debug state event kind={}", static_cast<int>(change_state->kind));
+                LogDebug("Handling change debug state event kind={}", static_cast<int>(change_state->kind));
 
                 auto& ps = *target_state->process_state;
 
@@ -220,6 +220,22 @@ namespace lodeb {
                     case ChangeDebugStateEvent::StepIn: thread.StepInto(); break;
                     case ChangeDebugStateEvent::StepOver: thread.StepOver(); break;
                     case ChangeDebugStateEvent::Continue: ps.process.Continue(); break;
+                }
+            } else if (auto* select_frame = std::get_if<SetSelectedFrameEvent>(&event)) {
+                assert(target_state);
+                assert(target_state->process_state);
+
+                LogDebug("Handling change in selected frame to idx={}", static_cast<int>(select_frame->idx));
+
+                auto& ps = *target_state->process_state;
+
+                auto thread = ps.process.GetSelectedThread();
+                thread.SetSelectedFrame(select_frame->idx);
+
+                auto loc = GetCurFrameLoc();
+
+                if(loc) {
+                    new_events.push_back(ViewSourceEvent{std::move(*loc)});
                 }
             }
         }
