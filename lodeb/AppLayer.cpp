@@ -239,16 +239,37 @@ namespace lodeb {
 
             ImGui::SameLine();
 
-            bool has_bp = state.target_state && state.target_state->loc_to_breakpoint.contains(loc);
+            auto bp = ([&]() -> std::optional<lldb::SBBreakpoint> {
+                if(!state.target_state) {
+                    return std::nullopt;
+                }
+                
+                auto found = state.target_state->loc_to_breakpoint.find(loc);
 
-            if(has_bp) {
+                if(found == state.target_state->loc_to_breakpoint.end()) {
+                    return std::nullopt;
+                }
+
+                return found->second;
+            })();
+
+            if(bp) {
                 auto* draw_list = ImGui::GetWindowDrawList();
                 auto pos = ImGui::GetItemRectMin();
-                draw_list->AddCircleFilled(
-                    {pos.x + 10, pos.y + 10},
-                    5,
-                    ImGui::GetColorU32(ImVec4{1.0, 0.0, 0.0, 1.0})
-                );
+
+                if(bp->GetNumLocations() == 0) {
+                    draw_list->AddCircle(
+                        {pos.x + 10, pos.y + 10},
+                        5,
+                        ImGui::GetColorU32(ImVec4{1.0, 0.0, 0.0, 1.0})
+                    );
+                } else {
+                    draw_list->AddCircleFilled(
+                        {pos.x + 10, pos.y + 10},
+                        5,
+                        ImGui::GetColorU32(ImVec4{1.0, 0.0, 0.0, 1.0})
+                    );
+                }
 
                 ImGui::SameLine();
             }
@@ -403,7 +424,13 @@ namespace lodeb {
                     continue;
                 }
 
-                auto name = std::format("{} at {:#010x}", var.GetName(), var.GetLoadAddress());
+                auto var_name = var.GetName();
+
+                if(!var_name) {
+                    continue;
+                }
+
+                auto name = std::format("{} at {:#010x}", var_name, var.GetLoadAddress());
 
                 var_names.emplace_back(name);
                 name_to_value[name] = var;

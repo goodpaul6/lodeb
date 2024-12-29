@@ -211,11 +211,13 @@ namespace lodeb {
 
                 if(found == target_state->loc_to_breakpoint.end()) {
                     LogDebug("Adding breakpoint to {}", toggle_bp->loc);
-
-                    target_state->loc_to_breakpoint[toggle_bp->loc] = target_state->target.BreakpointCreateByLocation(
+                
+                    auto bp = target_state->target.BreakpointCreateByLocation(
                         toggle_bp->loc.path.c_str(),
                         toggle_bp->loc.line
                     );
+
+                    target_state->loc_to_breakpoint[toggle_bp->loc] = std::move(bp);
                     continue;
                 }
 
