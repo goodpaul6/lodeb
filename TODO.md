@@ -1,6 +1,8 @@
 # Lodeb Tasks
 
+- [ ] Add watch window where users can persist expressions
 - [ ] Make `SymbolLocCache` into a generic search container so we can use it for files too
+- [ ] Allow matching multiple tokens in symbol search (e.g. `Cache Load` will match `Cache::Load`)
 - [ ] Add process exit code to end of process output
 - [ ] Write `lodeb.txt` to the working directory of the target
 - [ ] Parse commands that start with `>` as lodeb commands
@@ -8,9 +10,8 @@
 - [ ] Allow specifying args for targets
 - [ ] Allow searching for files
 - [ ] Add keybindings for starting, stepping, continuing, and killing a process
-- [ ] Add horizontal and vertical scrollbar to `WindowFrames`
-- [ ] Add watch window where users can persist expressions
 - [ ] Add window to select threads
+- [ ] Make source view a read-only text editor
 - [x] Load target asynchronously for faster startup
 - [x] Add horizontal scroll bars to process output, stack frames, and locals
 - [x] Update format string for frames so it looks less ugly
