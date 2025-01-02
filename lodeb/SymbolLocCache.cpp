@@ -15,6 +15,10 @@ namespace lodeb {
                     continue;
                 }
 
+                // TODO(Apaar): This allocates a new string on every loop. It's fine because
+                // we're gonna be moving it into `file_paths` anyways but `AddrLoc` just uses
+                // a stack-allocated buffer so it might be wise to just avoid calling the util
+                // functions if we ever see this being a bottleneck.
                 auto loc = SymLoc(sym);
 
                 if(!loc) {
@@ -26,10 +30,15 @@ namespace lodeb {
                 auto start = names.size();
                 names.append(name);
 
+                auto [inserted_iter, inserted] = file_paths.insert(std::move(loc->path));
+
                 locs.push_back(NameRangeLoc{
                     .start = start,
                     .len = static_cast<uint32_t>(name.size()),
-                    .loc = std::move(*loc),
+                    .loc = FileLocView{
+                        .path = *inserted_iter,
+                        .line = loc->line,
+                    },
                 });
             }
         }

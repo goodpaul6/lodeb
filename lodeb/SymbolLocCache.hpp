@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <string>
+#include <unordered_set>
 
 #include <lldb/API/LLDB.h>
 
@@ -18,19 +19,22 @@ namespace lodeb {
         // For every match, we do binary search in the locs below
         // to grab the corresponding loc which contains the located index.
         std::string names;
+        
+        // We pool paths here so we can use FileLocView above
+        std::unordered_set<std::string> file_paths;
 
         struct NameRangeLoc {
             size_t start = 0;
             uint32_t len = 0;
 
-            FileLoc loc;
+            FileLocView loc;
         };
         
         std::vector<NameRangeLoc> locs;
     public:
         struct Match {
             std::string_view name;
-            const FileLoc* loc = nullptr;
+            const FileLocView* loc = nullptr;
         };
 
         void Load(lldb::SBTarget& target);

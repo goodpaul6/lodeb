@@ -1,7 +1,7 @@
 # Lodeb Tasks
 
-- [ ] Fix the speed of source view when scrolling large files
 - [ ] Add watch window where users can persist expressions
+- [ ] Fix the speed of source view when scrolling large files
 - [ ] Make `SymbolLocCache` into a generic search container so we can use it for files too
 - [ ] Allow matching multiple tokens in symbol search (e.g. `Cache Load` will match `Cache::Load`)
 - [ ] Add process exit code to end of process output
@@ -12,6 +12,7 @@
 - [ ] Allow searching for files
 - [ ] Add keybindings for starting, stepping, continuing, and killing a process
 - [ ] Add window to select threads
+- [x] Reduce memory usage of `SymbolLocCache` by pooling file loc strings
 - [x] Fix symbols showing up multiple times in search (bug in `SymbolLocCache`)
 - [x] Add limit to `ForEachMatch`
 - [x] Load target asynchronously for faster startup

@@ -133,7 +133,7 @@ namespace lodeb {
                 name_buf = match.name;
 
                 if(ImGui::Selectable(name_buf.c_str())) {
-                    ViewSourceEvent event{*match.loc};
+                    ViewSourceEvent event{to_owned(*match.loc)};
 
                     state.events.push_back(std::move(event));
 
