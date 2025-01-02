@@ -1,20 +1,21 @@
 # Lodeb Tasks
 
+- [ ] Add window which lists breakpoints
 - [ ] Do not render windows if `Begin` returns false
-- [ ] Store watch window expressions in `lodeb.txt`
 - [ ] Add support for custom string types, etc in the watch window
 - [ ] Fix the speed of source view when scrolling large files
 - [ ] Make `SymbolLocCache` into a generic search container so we can use it for files too
 - [ ] Allow matching multiple tokens in symbol search (e.g. `Cache Load` will match `Cache::Load`)
 - [ ] Add process exit code to end of process output
+- [ ] Store watch window expressions in `lodeb.txt`
 - [ ] Write `lodeb.txt` to the working directory of the target
 - [ ] Parse commands that start with `>` as lodeb commands
 - [ ] Add command to open a particular `lodeb.txt`
 - [ ] Allow specifying args for targets
 - [ ] Allow searching for files
-- [ ] Add keybindings for starting, stepping, continuing, and killing a process
 - [ ] Add window to select threads
 - [ ] Allow excluding "boring" functions from stack trace
+- [x] Add keybindings for starting, stepping, continuing, and killing a process
 - [x] Allow horizontal scrolling in watch window
 - [x] Add watch window where users can persist expressions
 - [x] Reduce memory usage of `SymbolLocCache` by pooling file loc strings

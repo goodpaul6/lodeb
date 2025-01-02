@@ -44,6 +44,28 @@ namespace lodeb {
     }
     
     void AppLayer::OnUpdate(float) {
+        if(state.target_state && !state.cmd_bar_state) {
+            auto& ts = *state.target_state;
+
+            auto& input = Application::GetInput();
+
+            if(!ts.process_state) {
+                if(input.GetKeyState(KeyCode::R) == KeyState::Pressed) {
+                    state.events.push_back(StartProcessEvent{});
+                }
+            } else if (ts.process_state->process.GetState() == lldb::eStateStopped) {
+                if(input.GetKeyState(KeyCode::R) == KeyState::Pressed) {
+                    state.events.push_back(ChangeDebugStateEvent{ChangeDebugStateEvent::Kill});
+                } else if(input.GetKeyState(KeyCode::C) == KeyState::Pressed) {
+                    state.events.push_back(ChangeDebugStateEvent{ChangeDebugStateEvent::Continue});
+                } else if(input.GetKeyState(KeyCode::Right) == KeyState::Pressed) {
+                    state.events.push_back(ChangeDebugStateEvent{ChangeDebugStateEvent::StepIn});
+                } else if(input.GetKeyState(KeyCode::Down) == KeyState::Pressed) {
+                    state.events.push_back(ChangeDebugStateEvent{ChangeDebugStateEvent::StepOver});
+                }
+            }
+        }
+
         state.Update();
         state.Store(STATE_PATH);
     }
@@ -155,6 +177,7 @@ namespace lodeb {
             input.IsKeyDown(KeyCode::RightControl) ||
             input.IsKeyDown(KeyCode::LeftSuper) ||
             input.IsKeyDown(KeyCode::RightSuper))) {
+            ImGui::CloseCurrentPopup();
             ImGui::OpenPopup(COMMAND_BAR_POPUP_NAME);
         }
 
@@ -328,6 +351,8 @@ namespace lodeb {
         auto& ps = state.target_state->process_state;
 
         if(ps->process.GetState() != lldb::eStateStopped) {
+            ImGui::Text("Running...");
+
             ImGui::End();
             return;
         }
