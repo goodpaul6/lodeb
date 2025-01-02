@@ -78,6 +78,9 @@ namespace lodeb {
 
                     if(loc.start <= pos && loc.start + loc.len > pos) {
                         fn(loc_to_match(loc));
+
+                        // Skip over this symbol in the names (-1 because pos += 1 in the for loop 'next')
+                        pos = loc.start + loc.len - 1;
                         break;
                     } else if(loc.start > pos) {
                         hi = mid - 1;
