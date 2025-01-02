@@ -1,5 +1,6 @@
 # Lodeb Tasks
 
+- [ ] Fix bug where "Load Target" doesn't actually load the target
 - [ ] Add window which lists breakpoints
 - [ ] Do not render windows if `Begin` returns false
 - [ ] Add support for custom string types, etc in the watch window

@@ -44,7 +44,7 @@ namespace lodeb {
     }
     
     void AppLayer::OnUpdate(float) {
-        if(state.target_state && !state.cmd_bar_state) {
+        if(state.target_state && !state.cmd_bar_state && !ImGui::GetIO().WantCaptureKeyboard) {
             auto& ts = *state.target_state;
 
             auto& input = Application::GetInput();
@@ -113,7 +113,9 @@ namespace lodeb {
             }
         }
 
-        if(ImGui::Button("Load Target")) {
+        if(state.target_state_future) {
+            ImGui::Text("Loading target...");
+        } else if(ImGui::Button("Load Target")) {
             state.events.push_back(LoadTargetEvent{});
         }
 

@@ -141,16 +141,7 @@ namespace lodeb {
         };
 
         // We handle asynchronously loaded resources first thing
-        if(target_state) {
-            auto& ts = *target_state;
-
-            if(!ts.sym_loc_cache) {
-                if(ts.sym_loc_cache_future.wait_for(std::chrono::seconds::zero()) == std::future_status::ready) {
-                    // This can _only be called once hence us wrapping this in the !ts.sym_loc_cache if
-                    ts.sym_loc_cache = ts.sym_loc_cache_future.get();
-                }
-            }
-        } else if(target_state_future) {
+        if(target_state_future) {
             if(target_state_future->wait_for(std::chrono::seconds::zero()) == std::future_status::ready) {
                 target_state = target_state_future->get();
 
@@ -180,6 +171,17 @@ namespace lodeb {
             }
         }
 
+        if(target_state) {
+            auto& ts = *target_state;
+
+            if(!ts.sym_loc_cache) {
+                if(ts.sym_loc_cache_future.wait_for(std::chrono::seconds::zero()) == std::future_status::ready) {
+                    // This can _only be called once hence us wrapping this in the !ts.sym_loc_cache if
+                    ts.sym_loc_cache = ts.sym_loc_cache_future.get();
+                }
+            }
+        }
+
         handle_process();
 
         for(const auto& event : events) {
@@ -191,7 +193,7 @@ namespace lodeb {
                         .target = debugger.CreateTarget(exe_path.c_str()),
                     };
 
-                    LogInfo("Created target {}", target_settings.exe_path);
+                    LogInfo("Created target {}", exe_path);
 
                     return ts;
                 });
