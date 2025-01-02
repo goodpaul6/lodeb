@@ -1,5 +1,6 @@
 # Lodeb Tasks
 
+- [ ] Do not render windows if `Begin` returns false
 - [ ] Store watch window expressions in `lodeb.txt`
 - [ ] Add support for custom string types, etc in the watch window
 - [ ] Fix the speed of source view when scrolling large files
@@ -14,6 +15,7 @@
 - [ ] Add keybindings for starting, stepping, continuing, and killing a process
 - [ ] Add window to select threads
 - [ ] Allow excluding "boring" functions from stack trace
+- [x] Allow horizontal scrolling in watch window
 - [x] Add watch window where users can persist expressions
 - [x] Reduce memory usage of `SymbolLocCache` by pooling file loc strings
 - [x] Fix symbols showing up multiple times in search (bug in `SymbolLocCache`)

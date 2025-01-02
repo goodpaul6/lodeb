@@ -523,12 +523,21 @@ namespace lodeb {
     void AppLayer::WindowWatch() {
         ImGui::Begin("Watch");
 
-        if(!ImGui::BeginTable("##watch", 2)) {
+        auto win_size = ImGui::GetWindowSize();
+
+        float table_height = win_size.y - ImGui::GetTextLineHeightWithSpacing() * 3.5;
+
+        if(!ImGui::BeginTable("##watch", 2, 
+                ImGuiTableFlags_Borders | 
+                ImGuiTableFlags_ScrollX | 
+                ImGuiTableFlags_ScrollY, 
+                ImVec2{0.0f, table_height})) {
             ImGui::End();
+
             return;
         }
 
-        ImGui::TableSetupColumn("Expression");
+        ImGui::TableSetupColumn("Expression", ImGuiTableColumnFlags_WidthFixed, win_size.x * 0.25f);
         ImGui::TableSetupColumn("Value");
         ImGui::TableHeadersRow();
 
@@ -567,6 +576,8 @@ namespace lodeb {
         }
 
         ImGui::EndTable();
+
+        ImGui::Spacing();
 
         if(ImGui::Button("Add")) {
             // Add an empty watched value
