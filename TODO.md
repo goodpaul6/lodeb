@@ -1,6 +1,7 @@
 # Lodeb Tasks
 
-- [ ] Add watch window where users can persist expressions
+- [ ] Store watch window expressions in `lodeb.txt`
+- [ ] Add support for custom string types, etc in the watch window
 - [ ] Fix the speed of source view when scrolling large files
 - [ ] Make `SymbolLocCache` into a generic search container so we can use it for files too
 - [ ] Allow matching multiple tokens in symbol search (e.g. `Cache Load` will match `Cache::Load`)
@@ -12,6 +13,8 @@
 - [ ] Allow searching for files
 - [ ] Add keybindings for starting, stepping, continuing, and killing a process
 - [ ] Add window to select threads
+- [ ] Allow excluding "boring" functions from stack trace
+- [x] Add watch window where users can persist expressions
 - [x] Reduce memory usage of `SymbolLocCache` by pooling file loc strings
 - [x] Fix symbols showing up multiple times in search (bug in `SymbolLocCache`)
 - [x] Add limit to `ForEachMatch`

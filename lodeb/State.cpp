@@ -127,6 +127,9 @@ namespace lodeb {
                             break;
                         }
                     }
+
+                    // Recompute watched values
+                    ComputeWatchedValues();
                 } else if(state == lldb::eStateExited || state == lldb::eStateDetached || state == lldb::eStateUnloaded) {
                     LogInfo("Process exited");
 
@@ -286,13 +289,16 @@ namespace lodeb {
                 if(loc) {
                     new_events.push_back(ViewSourceEvent{std::move(*loc)});
                 }
+
+                // Need to re-evaluate the watched values in this frame
+                ComputeWatchedValues();
             }
         }
 
         events = std::move(new_events);
     }
 
-    std::optional<FileLoc> State::GetCurFrameLoc() {  
+    std::optional<lldb::SBFrame> State::GetCurFrame() {
         if(!target_state ||
            !target_state->process_state ||
            target_state->process_state->process.GetState() != lldb::eStateStopped) {
@@ -304,9 +310,46 @@ namespace lodeb {
             return std::nullopt;
         }
 
-        auto cur_frame = cur_thread.GetSelectedFrame();
+        return cur_thread.GetSelectedFrame();
+    }
 
-        return FrameLoc(cur_frame);
+    std::optional<FileLoc> State::GetCurFrameLoc() {
+        auto frame = GetCurFrame();
+
+        if(!frame) {
+            return std::nullopt;
+        }
+
+        return FrameLoc(*frame);
+    }
+
+    void State::ComputeWatchedValues() {
+        // No point recomputing if there's no process
+        if(!target_state || !target_state->process_state) {
+            return;
+        }
+
+        auto frame = GetCurFrame();
+        
+        if(!frame) {
+            return;
+        }
+
+        lldb::SBStream stream;
+
+        for(auto& [expr, value] : watch_state.expr_values) {
+            if(expr.empty()) {
+                // Don't bother with this
+                continue;
+            }
+
+            auto lldb_value = frame->EvaluateExpression(expr.c_str());
+
+            stream.Clear();
+            lldb_value.GetDescription(stream);
+
+            value = stream.GetData();
+        }
     }
 }
 

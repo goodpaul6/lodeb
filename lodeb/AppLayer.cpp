@@ -56,6 +56,7 @@ namespace lodeb {
         WindowDebug();
         WindowLocals();
         WindowFrames();
+        WindowWatch();
     }
 
     void AppLayer::WindowTargetSettings() {
@@ -430,7 +431,7 @@ namespace lodeb {
             }
         }
 
-        static lldb::SBStream stream;
+        lldb::SBStream stream;
 
         auto get_name_desc = [&](const std::string& var_name) -> const char* {
             auto found_desc = name_to_desc.find(var_name);
@@ -516,6 +517,73 @@ namespace lodeb {
         }
 
         ImGui::EndChild();
+        ImGui::End();
+    }
+
+    void AppLayer::WindowWatch() {
+        ImGui::Begin("Watch");
+
+        if(!ImGui::BeginTable("##watch", 2)) {
+            ImGui::End();
+            return;
+        }
+
+        ImGui::TableSetupColumn("Expression");
+        ImGui::TableSetupColumn("Value");
+        ImGui::TableHeadersRow();
+
+        bool values_out_of_date = 
+            !state.target_state || 
+            !state.target_state->process_state || 
+            (state.target_state->process_state->process.GetState() != lldb::eStateStopped);
+
+        bool need_to_recompute = false;
+
+        for(int i = 0; auto& [expr, value]: state.watch_state.expr_values) {
+            ImGui::TableNextRow();
+
+            ImGui::TableNextColumn();
+
+            ImGui::PushID(i);
+
+            ImGui::InputText("##expr", &expr);
+
+            if(ImGui::IsItemDeactivated()) {
+                need_to_recompute = true;
+            }
+
+            ImGui::TableNextColumn();
+
+            if(values_out_of_date) {
+                // Grey out the text if not running
+                ImGui::TextColored(ImVec4{0.5, 0.5, 0.5, 0.5}, "%s", value.c_str());
+            } else {
+                ImGui::TextUnformatted(value.c_str());
+            }
+
+            ImGui::PopID();
+
+            i += 1;
+        }
+
+        ImGui::EndTable();
+
+        if(ImGui::Button("Add")) {
+            // Add an empty watched value
+            state.watch_state.expr_values.emplace_back();
+        }
+
+        ImGui::SameLine();
+
+        // TODO(Apaar): I did this because lazy but really the remove button should be in the table itself
+        if(!state.watch_state.expr_values.empty() && ImGui::Button("Remove")) {
+            state.watch_state.expr_values.pop_back();
+        }
+
+        if(need_to_recompute) {
+            state.ComputeWatchedValues();
+        }
+
         ImGui::End();
     }
 }

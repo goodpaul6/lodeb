@@ -25,6 +25,15 @@ namespace lodeb {
         lldb::SBProcess process;
     };
 
+    struct WatchState {
+        struct ExprValue {
+            std::string expr;
+            std::string value;
+        };
+
+        std::vector<ExprValue> expr_values;
+    };
+
     struct TargetState {
         lldb::SBTarget target;
 
@@ -50,7 +59,7 @@ namespace lodeb {
         // Only stays valid for one frame
         std::optional<int> scroll_to_line;
     };
-    
+
     struct LoadTargetEvent {};
     struct ViewSourceEvent {
         FileLoc loc;
@@ -101,6 +110,9 @@ namespace lodeb {
         // even if the previous process/target went away.
         std::string process_output;
 
+        // We keep this here for reference similar to the `process_output`.
+        WatchState watch_state;
+
         State();
         ~State();    
 
@@ -109,7 +121,12 @@ namespace lodeb {
 
         void Update();
 
-        // SelecteadThread->SelectedFrame -> FileLoc
+        void ComputeWatchedValues();
+
+        // SelectedThread->SelectedFrame
+        std::optional<lldb::SBFrame> GetCurFrame();
+
+        // SelectedThread->SelectedFrame -> FileLoc
         std::optional<FileLoc> GetCurFrameLoc();
     };
 }
