@@ -115,10 +115,15 @@ std::unordered_map<MouseButton, KeyState>& Scaffold::Input::GetMouseButtonStateM
 
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    if (action == GLFW_REPEAT) return;
     if (key == GLFW_KEY_UNKNOWN) return;
 
     KeyState state = (KeyState)(action);
+
+    if (action == GLFW_REPEAT) {
+        // HACK(Apaar): Handles key repeat fairly gracefully
+        state = KeyState::Pressed;
+    }
+
     s_instance->SetKeyState((KeyCode)key, state);
 }
 
