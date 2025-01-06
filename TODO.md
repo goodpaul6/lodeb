@@ -1,6 +1,5 @@
 # Lodeb Tasks
 
-- [ ] Keep text input focus on command panel but handle arrow up/down
 - [ ] Fix bug where "Load Target" doesn't actually load the target
 - [ ] Add window which lists breakpoints
 - [ ] Do not render windows if `Begin` returns false
@@ -17,6 +16,7 @@
 - [ ] Allow searching for files
 - [ ] Add window to select threads
 - [ ] Allow excluding "boring" functions from stack trace
+- [x] Keep text input focus on command panel but handle arrow up/down
 - [x] Update scaffold to handle key repeat
 - [x] Add keybindings for starting, stepping, continuing, and killing a process
 - [x] Allow horizontal scrolling in watch window

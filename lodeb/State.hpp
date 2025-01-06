@@ -50,6 +50,8 @@ namespace lodeb {
     struct CommandBarState {
         std::string text;
         bool focused_text = false;
+
+        int focused_item_index = -1;
     };
 
     struct SourceViewState {

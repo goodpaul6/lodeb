@@ -1,6 +1,7 @@
 #include "AppLayer.hpp"
 
 #include <imgui.h>
+#include <imgui_internal.h>
 #include <imgui_stdlib.h>
 #include <tinyfiledialogs.h>
 #include <lldb/API/LLDB.h>
@@ -144,20 +145,46 @@ namespace lodeb {
                 return;
             }
 
-            // TODO(Apaar): Handle file search
-            ImGui::BeginChild("##symbols", {400, 300}, ImGuiChildFlags_NavFlattened);
+            auto& cmd_state = *state.cmd_bar_state;
+
+            auto& input = Application::GetInput();
+
+            auto up_state = input.GetKeyState(KeyCode::Up);
+            auto down_state = input.GetKeyState(KeyCode::Down);
+
+            if(up_state == KeyState::Pressed) {
+                if(cmd_state.focused_item_index > 0) {
+                    cmd_state.focused_item_index -= 1;
+                }
+            }
+
+            if(down_state == KeyState::Pressed) {
+                cmd_state.focused_item_index += 1;
+            }
+
+            // TODO(Apaar): Handle file search.
+
+            // I disable nav because keyboard nav will be handled manually
+            // via arrow up/down above.
+            ImGui::BeginChild("##symbols", {400, 300}, 0, ImGuiWindowFlags_NoNav);
 
             // ImGui doesn't handle std::string_view so we put match names in here
             std::string name_buf;
 
-            size_t i = 0;
+            int i = 0;
 
             ts.sym_loc_cache->ForEachMatch(sym_search->text, [&](const auto& match) {
                 ImGui::PushID(i);
 
                 name_buf = match.name;
 
-                if(ImGui::Selectable(name_buf.c_str())) {
+                if(cmd_state.focused_item_index == -1) {
+                    cmd_state.focused_item_index = i;
+                }
+
+                bool is_focused = i == cmd_state.focused_item_index;
+
+                if(ImGui::Selectable(name_buf.c_str(), is_focused) || (is_focused && input.GetKeyState(KeyCode::Enter) == KeyState::Pressed)) {
                     ViewSourceEvent event{to_owned(*match.loc)};
 
                     state.events.push_back(std::move(event));
@@ -165,9 +192,18 @@ namespace lodeb {
                     ImGui::CloseCurrentPopup();
                 }
 
+                if(is_focused) {
+                    ImGui::ScrollToItem(ImGuiScrollFlags_KeepVisibleEdgeY);
+                }
+
                 ImGui::PopID();
+
                 i += 1;
             }, 100);
+
+            if(cmd_state.focused_item_index >= i) {
+                cmd_state.focused_item_index = i - 1;
+            }
 
             ImGui::EndChild();
         };
@@ -192,7 +228,7 @@ namespace lodeb {
             {0.5f, 0.5f}
         );
 
-        if(!ImGui::BeginPopup(COMMAND_BAR_POPUP_NAME)) {
+        if(!ImGui::BeginPopup(COMMAND_BAR_POPUP_NAME, ImGuiWindowFlags_NoNav)) {
             state.cmd_bar_state.reset();
             return;
         }
