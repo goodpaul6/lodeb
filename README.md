@@ -1,6 +1,6 @@
 # Lodeb
 
-A frontend for LLDB (the debugger) written in C++ using [Dear ImGui](https://github.com/ocornut/imgui). It's very early but I'm working towards making this my daily driver for debugging.
+A frontend for LLDB (the debugger) written in C++ using [Dear ImGui](https://github.com/ocornut/imgui). It's very early but it's already my daily driver for debugging C/C++ programs.
 
 <p align=center>
   <img src="https://github.com/user-attachments/assets/e0797fc8-614b-4947-8f5b-570a29329c25" alt="Recording of Lodeb">
