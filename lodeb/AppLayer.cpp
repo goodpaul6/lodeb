@@ -173,6 +173,8 @@ namespace lodeb {
 
             int i = 0;
 
+            static int last_focused_item_index = 0;
+
             ts.sym_loc_cache->ForEachMatch(sym_search->text, [&](const auto& match) {
                 ImGui::PushID(i);
 
@@ -192,8 +194,9 @@ namespace lodeb {
                     ImGui::CloseCurrentPopup();
                 }
 
-                if(is_focused) {
+                if(is_focused && last_focused_item_index != i) {
                     ImGui::ScrollToItem(ImGuiScrollFlags_KeepVisibleEdgeY);
+                    last_focused_item_index = i;
                 }
 
                 ImGui::PopID();

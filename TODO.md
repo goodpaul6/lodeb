@@ -17,6 +17,7 @@
 - [ ] Allow searching for files
 - [ ] Add window to select threads
 - [ ] Allow excluding "boring" functions from stack trace
+- [x] Fix bug where we can't scroll the command window because it keeps focusing the active item
 - [x] Keep text input focus on command panel but handle arrow up/down
 - [x] Update scaffold to handle key repeat
 - [x] Add keybindings for starting, stepping, continuing, and killing a process
