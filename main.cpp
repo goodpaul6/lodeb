@@ -19,7 +19,7 @@ int main(int, char**)
     manifest.useInputInfoLayer = false;
     manifest.useDemoLayer = false;
 
-    manifest.swapInterval = 0;
+    manifest.swapInterval = 1;
 
     Scaffold::Application app{manifest};
 
