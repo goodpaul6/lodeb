@@ -164,7 +164,7 @@ namespace lodeb {
                     // Should look into whether we can make this receive a const target.
                     cache.Load(target_state->target);
 
-                    LogDebug("Loaded symbols from target");
+                    LogDebug("Loaded {} symbols from target", cache.SymbolCount());
 
                     return cache;
                 });

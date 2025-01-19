@@ -2,6 +2,7 @@
 
 - [ ] Fix bug where "Load Target" doesn't actually load the target
 - [ ] Add window which lists breakpoints
+- [ ] Look at https://github.com/DanielGavin/ols/blob/master/src/common/fuzzy.odin for more effective fuzzy matching
 - [ ] Do not render windows if `Begin` returns false
 - [ ] Add support for custom string types, etc in the watch window
 - [ ] Fix the speed of source view when scrolling large files

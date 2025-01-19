@@ -39,6 +39,8 @@ namespace lodeb {
 
         void Load(lldb::SBTarget& target);
 
+        size_t SymbolCount() const { return locs.size(); }
+
         template <typename Fn>
         void ForEachMatch(std::string_view search, Fn&& fn, size_t limit) {
             if(locs.empty()) {
