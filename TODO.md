@@ -1,5 +1,6 @@
 # Lodeb Tasks
 
+- [ ] Allow copy pasting stuff from watch/locals
 - [ ] Fix bug where "Load Target" doesn't actually load the target
 - [ ] Add window which lists breakpoints
 - [ ] Look at https://github.com/DanielGavin/ols/blob/master/src/common/fuzzy.odin for more effective fuzzy matching
@@ -17,6 +18,7 @@
 - [ ] Allow searching for files
 - [ ] Add window to select threads
 - [ ] Allow excluding "boring" functions from stack trace
+- [x] Reload file in source view if it was modified since last load
 - [x] Fix bug where we can't scroll the command window because it keeps focusing the active item
 - [x] Keep text input focus on command panel but handle arrow up/down
 - [x] Update scaffold to handle key repeat

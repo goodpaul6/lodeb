@@ -8,6 +8,7 @@
 #include <memory>
 #include <unordered_map>
 #include <future>
+#include <filesystem>
 
 #include <lldb/API/LLDB.h>
 
@@ -57,6 +58,8 @@ namespace lodeb {
     struct SourceViewState {
         std::string path;
         std::string text;
+
+        std::filesystem::file_time_type last_modified_at;
 
         // Only stays valid for one frame
         std::optional<int> scroll_to_line;

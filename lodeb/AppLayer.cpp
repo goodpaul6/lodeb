@@ -264,10 +264,17 @@ namespace lodeb {
 
         auto cur_frame_loc = state.GetCurFrameLoc();
 
-        if(!source_view_state->path.empty() &&
-            source_view_state->text.empty()) {
-            ReadEntireFileInto(source_view_state->path.c_str(), source_view_state->text);            
-            LogInfo("Loaded file {}", source_view_state->path);
+        if(!source_view_state->path.empty()) {
+            std::error_code ec_ignore;
+
+            auto last_mod_time = std::filesystem::last_write_time(source_view_state->path, ec_ignore);
+
+            if(source_view_state->last_modified_at < last_mod_time) {
+                ReadEntireFileInto(source_view_state->path.c_str(), source_view_state->text);            
+                LogInfo("Loaded file {}", source_view_state->path);
+
+                source_view_state->last_modified_at = last_mod_time;                
+            }
         }
 
         ImGui::Begin("Source View");
