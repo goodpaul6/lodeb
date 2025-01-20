@@ -32,12 +32,17 @@ add_executable(${CMAKE_PROJECT_NAME}
 )
 
 find_path(LLVM_INCLUDE_DIR
-    NAMES lldb
+    NAMES libunwind.h
     PATHS
         /usr/local/opt/llvm/include
         /opt/homebrew/opt/llvm/include
+        NO_DEFAULT_PATH
         # TODO(Apaar): Add windows search paths
 )
+
+if(NOT LLVM_INCLUDE_DIR)
+    message(FATAL_ERROR "LLVM include directory not found.")
+endif()
 
 # Find LLDB library
 find_library(LLDB_LIBRARY
@@ -47,6 +52,13 @@ find_library(LLDB_LIBRARY
         /opt/homebrew/opt/llvm/lib
         # TODO(Apaar): Add windows paths
 )
+
+if(NOT LLDB_LIBRARY)
+    message(FATAL_ERROR "LLDB library not found.")
+endif()
+
+message(STATUS "LLVM Include Directory: ${LLVM_INCLUDE_DIR}")
+message(STATUS "LLDB Library: ${LLDB_LIBRARY}")
 
 target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
 
