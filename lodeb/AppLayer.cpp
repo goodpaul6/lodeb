@@ -531,16 +531,29 @@ namespace lodeb {
 
         ImGui::BeginChild("##vars", {-1, -1}, ImGuiChildFlags_Border, ImGuiWindowFlags_HorizontalScrollbar);
 
-        for(const auto& var_name : var_names) {
+        for(auto i = 0u; const auto& var_name : var_names) {
+            ImGui::PushID(i);
+
             if(ImGui::TreeNode(var_name.c_str())) {
                 auto value = get_name_desc(var_name);
 
                 if(value) {
                     ImGui::TextUnformatted(value);
+
+                    if(ImGui::BeginPopupContextItem("##local_vars")) {
+                        if(ImGui::MenuItem("Copy##local_vars_value")) {
+                            ImGui::SetClipboardText(value);
+                        }
+
+                        ImGui::EndPopup();
+                    }
                 }
 
                 ImGui::TreePop();
             }
+
+            ImGui::PopID();
+            ++i;
         }
 
         ImGui::EndChild();
@@ -641,6 +654,14 @@ namespace lodeb {
                 ImGui::TextColored(ImVec4{0.5, 0.5, 0.5, 0.5}, "%s", value.c_str());
             } else {
                 ImGui::TextUnformatted(value.c_str());
+            }
+
+            if(ImGui::BeginPopupContextItem("##watch_vars")) {
+                if(ImGui::MenuItem("Copy##watch_vars_value")) {
+                    ImGui::SetClipboardText(value.c_str());
+                }
+
+                ImGui::EndPopup();
             }
 
             ImGui::PopID();
