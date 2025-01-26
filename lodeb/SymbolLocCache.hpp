@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <unordered_set>
+#include <cctype>
 
 #include <lldb/API/LLDB.h>
 
@@ -19,6 +20,9 @@ namespace lodeb {
         // For every match, we do binary search in the locs below
         // to grab the corresponding loc which contains the located index.
         std::string names;
+
+        // To make symbol search case-insensitive (assumes ASCII)
+        std::string lowercase_names;
         
         // We pool paths here so we can use FileLocView above
         std::unordered_set<std::string> file_paths;
@@ -47,6 +51,12 @@ namespace lodeb {
                 return;
             }
 
+            std::string search_buf{search};
+            
+            for(auto& c : search_buf) {
+                c = std::tolower(c);
+            }
+
             const auto loc_to_match = [&](NameRangeLoc& loc) {
                 return Match{
                     .name = std::string_view{names}.substr(loc.start, loc.len),
@@ -56,7 +66,7 @@ namespace lodeb {
 
             size_t count = 0;
             
-            if(search.empty()) {
+            if(search_buf.empty()) {
                 for(auto& loc: locs) {
                     count += 1;
                     if(count > limit) {
@@ -69,7 +79,7 @@ namespace lodeb {
                 return;
             }
 
-            for(size_t pos = 0; (pos = names.find(search, pos)), pos != std::string::npos; pos += 1) { 
+            for(size_t pos = 0; (pos = lowercase_names.find(search_buf, pos)), pos != std::string::npos; pos += 1) { 
                 count += 1;
                 if(count > limit) {
                     break;

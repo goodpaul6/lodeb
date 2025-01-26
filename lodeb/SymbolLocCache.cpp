@@ -4,6 +4,8 @@
 
 namespace lodeb {
     void SymbolLocCache::Load(lldb::SBTarget& target) {
+        std::string name_buf;
+
         for(auto mod_i = 0u; mod_i < target.GetNumModules(); ++mod_i) {
             auto mod = target.GetModuleAtIndex(mod_i);
 
@@ -25,16 +27,22 @@ namespace lodeb {
                     continue;
                 }
 
-                std::string_view name = sym.GetName();
+                name_buf = sym.GetName();
 
                 auto start = names.size();
-                names.append(name);
+                names.append(name_buf);
+
+                for(auto& c : name_buf) {
+                    c = std::tolower(c);
+                }
+
+                lowercase_names.append(name_buf);
 
                 auto [inserted_iter, inserted] = file_paths.insert(std::move(loc->path));
 
                 locs.push_back(NameRangeLoc{
                     .start = start,
-                    .len = static_cast<uint32_t>(name.size()),
+                    .len = static_cast<uint32_t>(name_buf.size()),
                     .loc = FileLocView{
                         .path = *inserted_iter,
                         .line = loc->line,

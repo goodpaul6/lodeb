@@ -17,6 +17,7 @@
 - [ ] Allow searching for files
 - [ ] Add window to select threads
 - [ ] Allow excluding "boring" functions from stack trace
+- [x] Make symbol search case insensitive
 - [x] Allow copying to clipboard from watch/locals
 - [x] Reload file in source view if it was modified since last load
 - [x] Fix bug where we can't scroll the command window because it keeps focusing the active item
