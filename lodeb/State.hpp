@@ -38,6 +38,9 @@ namespace lodeb {
     struct TargetState {
         lldb::SBTarget target;
 
+        // Always created, but disabled by default
+        lldb::SBBreakpoint breakpoint_on_throw;
+
         // We need to retain this future so that we can grab its
         // value when we're done.
         std::future<SymbolLocCache> sym_loc_cache_future;

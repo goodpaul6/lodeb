@@ -80,6 +80,7 @@ namespace lodeb {
         WindowLocals();
         WindowFrames();
         WindowWatch();
+        WindowBreakpoints();
     }
 
     void AppLayer::WindowTargetSettings() {
@@ -688,6 +689,25 @@ namespace lodeb {
         if(need_to_recompute) {
             state.ComputeWatchedValues();
         }
+
+        ImGui::End();
+    }
+    
+    void AppLayer::WindowBreakpoints() {
+        ImGui::Begin("Breakpoints");
+
+        if(!state.target_state) {
+            ImGui::Text("No target loaded");
+
+            ImGui::End();
+            return;
+        }
+
+        bool enabled = state.target_state->breakpoint_on_throw.IsEnabled();
+
+        ImGui::Checkbox("Break on throw", &enabled);
+
+        state.target_state->breakpoint_on_throw.SetEnabled(enabled);
 
         ImGui::End();
     }

@@ -123,6 +123,10 @@ namespace lodeb {
 
                             if(loc) {
                                 new_events.push_back(ViewSourceEvent{std::move(*loc)});
+                            } else {
+                                // TODO(Apaar): Update the source view to indicate they should go up the stack
+                                // in this case, or just go up the stack ourselves
+                                LogError("Could not get loc for breakpoint/step");
                             }
                             break;
                         }
@@ -189,8 +193,19 @@ namespace lodeb {
                 LogDebug("Kicking off task to load target {}", target_settings.exe_path);
                 
                 target_state_future = std::async(std::launch::async, [&, exe_path = target_settings.exe_path]() {
+                    auto target = debugger.CreateTarget(exe_path.c_str());
+                    auto breakpoint_on_throw = target.BreakpointCreateForException(
+                        lldb::eLanguageTypeC_plus_plus,
+                        false,
+                        true
+                    );
+
+                    // Disabled by default
+                    breakpoint_on_throw.SetEnabled(false);
+
                     TargetState ts = {
-                        .target = debugger.CreateTarget(exe_path.c_str()),
+                        .target = std::move(target),
+                        .breakpoint_on_throw = std::move(breakpoint_on_throw),
                     };
 
                     LogInfo("Created target {}", exe_path);

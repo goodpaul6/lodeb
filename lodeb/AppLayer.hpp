@@ -23,5 +23,6 @@ namespace lodeb {
         void WindowLocals();
         void WindowFrames();
         void WindowWatch();
+        void WindowBreakpoints();
     };
 }

@@ -17,6 +17,7 @@
 - [ ] Allow searching for files
 - [ ] Add window to select threads
 - [ ] Allow excluding "boring" functions from stack trace
+- [x] Add a checkbox to enable breaking when an exception is thrown
 - [x] Make symbol search case insensitive
 - [x] Allow copying to clipboard from watch/locals
 - [x] Reload file in source view if it was modified since last load
